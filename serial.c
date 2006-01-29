@@ -1,0 +1,192 @@
+/* serial.c
+	Routines for software serial support.
+	Supports 9600 baud, 8/N/1, receive-only, on pin RB7.
+	(Could be parameterized, but on the 16F627/628/648 must be on PORTB for interrupt-on-change.)
+*/
+
+#define IN_SERIAL
+
+#include <system.h>
+
+#include "serial.h"
+
+
+#ifdef SOFTWARE_RECEIVE
+	
+	#define RECEIVE_PIN  7
+	bit receiveBit@PORTB.RECEIVE_PIN;
+	
+	char bitsRemaining;  // to be read, including stop bit
+	unsigned char dataIn;  // the byte we're in the process of reading; not yet complete.
+	
+	#define BAUD_RATE  9600
+	#define CLOCK_FREQ  4000000
+	#define CYCLE_RATE  CLOCK_FREQ / 4
+	
+	// one baud period, in cycles
+	#define BAUD_PERIOD  ((unsigned char) (CYCLE_RATE / BAUD_RATE))
+	
+	// 1.5 baud periods, in cycles
+	#define INTRO_BAUD_PERIOD  ((unsigned char) (CYCLE_RATE * 3 / 2 / BAUD_RATE))
+
+#endif
+
+// The input queue.
+// Currently only one byte.
+unsigned char dataQueue;
+
+
+void InitializeSerial()
+{
+	// Initialize globals.
+	ser_hasData = 0;
+	ser_error = 0;
+	
+	#ifdef SOFTWARE_RECEIVE
+		
+		// Initialize module-locals.
+		bitsRemaining = 0;
+		
+		// Set up RB4..7 for interrupt-on-change.
+		intcon.RBIE = 1;
+		intcon.RBIF = 0;
+		
+		// Set up Timer 2 for 9600 baud.
+		// Ideally, that's every 104 instructions.
+		// So we need no pre- or post-scaling for a one-byte counter.
+		t2con.TMR2ON = 0;  // ...but don't start it yet.
+		
+		intcon.TMR2IF = 0;
+		intcon.TMR2IE = 0;
+		intcon.PEIE = 1;
+	
+	#else
+		
+		// Set for 9600 baud.
+		txsta.BRGH = 1;  // Set baud rate to...
+		spbrg = 25;  // ... 9600 baud
+		rcsta.SPEN = 1;  // Enable serial port.
+		rcsta.CREN = 1;  // Enable serial transmission.
+		pie1.RCIE = 1;  // Enable interrupts on reception.
+		
+		intcon.PEIE = 1;
+	
+	#endif
+}
+
+void SerialInterrupt()
+{
+	#ifdef SOFTWARE_RECEIVE
+		
+		// First, try to continue a byte that's already been started.
+		if (pir1.TMR2IF) {
+			if (!ser_error && bitsRemaining) {
+				// Shift the next bit in from the left.
+				if (--bitsRemaining > 0)
+					// Rotate receivePin into dataIn.
+					asm {
+						bcf _status, C
+						btfsc _portb, RECEIVE_PIN
+						bsf _status, C
+						rrf _dataIn, F
+					}
+				else
+					// This is the stop bit.
+					if (!receiveBit) {
+						// But it wasn't set - must be a framing error.
+						ser_error = 1;
+						ser_errorType = 'F';
+					}
+				
+				// If we're out of bits, we've received the entire byte.
+				// (Because the first 1 we'll encounter was the start bit we shifted in.)
+				if (!bitsRemaining && !ser_error) {
+					// Done, and no error.
+					// Return it.
+					if (ser_hasData) {
+						// Collision error.
+						ser_error = 1;
+						ser_errorType = 'C';
+					}
+						
+					dataQueue = dataIn;
+					ser_hasData = 1;
+				} else {
+					// Otherwise, just leave the timer running for the next baud period.
+					pr2 = BAUD_PERIOD;
+				}
+			}
+			
+			pir1.TMR2IF = 0;
+		} else if (intcon.RBIF) {
+			if (!ser_error && !receiveBit) {
+				// No byte in progress, but one seems to have just started.
+				
+				// Set up to receive 8 more data bits and 1 stop bit.
+				bitsRemaining = 9;
+				
+				// Delay one and a half baud periods before the next interrupt,
+				// so we synchronize in the middle of an incoming bit.
+				pr2 = INTRO_BAUD_PERIOD;
+				tmr2 = 36 + 34;  // (rough compensation for the delay in getting this far + the delay in processing the first bit)
+				t2con.TMR2ON = 1;
+			}
+			
+			// Clear the interrupt.
+			intcon.RBIF = 0;  // should already be done when receiveBit is read.
+		}
+				
+		// If we're done, set the interrupt on pin change;
+		// if not, we can just keep the timer interrupt on.
+		// It's one or the other - we never need both.
+		// Another way to think of it is that the IOC is a way to save
+		// processor cycles (though it also allows us to react closer 
+		// to the leading edge of the start bit).
+		if (ser_error) {
+			// Disable both our interrupts.
+			intcon.TMR2ON = 0;
+			intcon.RBIE = 0;
+			intcon.RBIF = 0;
+		} else if (!bitsRemaining) {
+			// Done for the moment.  Just watch for the pin to change.
+			intcon.RBIE = 1;
+			intcon.RBIF = 0;
+			intcon.TMR2IE = 0;
+			t2con.TMR2ON = 0;
+		} else {
+			// Not yet done.  Poll the bit at the next timer interrupt.
+			intcon.RBIE = 0;
+			pir1.TMR2IF = 0;
+			pie1.TMR2IE = 1;
+			t2con.TMR2ON = 1;
+		}
+	
+	#else
+	// !SOFTWARE_RECEIVE
+	
+		if (pir1.RCIF && !ser_error) {
+			if (rcsta.FERR) {
+				ser_errorType = 'F';
+				ser_error = 1;
+				ser_hasData = 0;
+			} else if (rcsta.OERR) {
+				ser_errorType = 'C';
+				ser_error = 1;
+				ser_hasData = 0;
+			} else {
+				dataQueue = rcreg;
+				ser_error = 0;
+			}
+
+			ser_hasData = !ser_error;
+		}
+		
+	#endif
+}
+
+unsigned char ReadSerial()
+{
+	unsigned char result = dataQueue;
+	ser_hasData = 0;
+	return result;
+}
