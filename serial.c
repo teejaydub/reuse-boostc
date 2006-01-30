@@ -38,9 +38,37 @@ unsigned char dataQueue;
 
 void InitializeSerial()
 {
+	InitializeSerial(true, false);
+}
+
+void InitializeSerial(bool useReceive, bool useTransmit)
+{
 	// Initialize globals.
 	ser_hasData = 0;
 	ser_error = 0;
+	
+	// Stuff for both receive and transmit.
+	
+	#ifdef SOFTWARE_RECEIVE
+	
+	#else
+
+		// Set for 9600 baud.
+		txsta.BRGH = 1;  // Set baud rate to...
+		spbrg = 25;  // ... 9600 baud
+		rcsta.SPEN = 1;  // Enable serial port.
+		
+	#endif
+
+	// Transmit-only stuff.
+	
+	if (useTransmit) {
+		txsta.TXEN = 1;
+	}
+		
+	// Receive-only stuff.
+	
+	if (useReceive) {
 	
 	#ifdef SOFTWARE_RECEIVE
 		
@@ -62,16 +90,16 @@ void InitializeSerial()
 	
 	#else
 		
-		// Set for 9600 baud.
-		txsta.BRGH = 1;  // Set baud rate to...
-		spbrg = 25;  // ... 9600 baud
-		rcsta.SPEN = 1;  // Enable serial port.
 		rcsta.CREN = 1;  // Enable serial transmission.
 		pie1.RCIE = 1;  // Enable interrupts on reception.
 		
 		intcon.PEIE = 1;
 	
 	#endif
+	}
+	
+	// Enable interrupts.
+	intcon.GIE = 1;
 }
 
 void SerialInterrupt()
@@ -189,4 +217,17 @@ unsigned char ReadSerial()
 	unsigned char result = dataQueue;
 	ser_hasData = 0;
 	return result;
+}
+
+void WriteSerial(char c)
+{
+	while (!pir1.TXIF)
+		;
+	txreg = c;
+}
+
+void WriteSerialString(char* s)
+{
+	while (*s != 0)
+		WriteSerial(*s++);
 }

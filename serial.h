@@ -1,4 +1,7 @@
-/* serial.h */
+/* serial.h 
+
+	Define SOFTWARE_RECEIVE to provide reception in software (not debugged or polished yet).
+*/
 
 #ifndef __SERIAL_H
 #define __SERIAL_H
@@ -9,7 +12,8 @@
 #define SERIAL_EXTERN extern
 #endif
 
-// If this is set, ser_data is the next incoming byte.
+// If this is set, there's a new byte to be read with ReadSerial().
+// (Internal: dataQueue is the next incoming byte.)
 // Cleared automatically by ReadSerial().
 SERIAL_EXTERN bit ser_hasData;
 
@@ -24,7 +28,8 @@ SERIAL_EXTERN bit ser_error;
 SERIAL_EXTERN char ser_errorType;
 
 // After calling this, set GIE to start processing.
-void InitializeSerial();
+void InitializeSerial();  // equivalent to receive, no transmit, for legacy reasons.
+void InitializeSerial(bool useReceive, bool useTransmit);
 
 // Must be called in an ISR.
 void SerialInterrupt();
@@ -32,5 +37,11 @@ void SerialInterrupt();
 // Returns the next available character.
 // If this isn't called often enough, and incoming bytes collide, the Collision error is reported.
 unsigned char ReadSerial();
+
+// Sends the specified character out the serial port.
+void WriteSerial(char c);
+
+// Sends the specified string out the serial port, null-terminated.
+void WriteSerialString(char* s);
 
 #endif
