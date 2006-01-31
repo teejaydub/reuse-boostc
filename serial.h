@@ -29,7 +29,7 @@ SERIAL_EXTERN char ser_errorType;
 
 // After calling this, set GIE to start processing.
 void InitializeSerial();  // equivalent to receive, no transmit, for legacy reasons.
-void InitializeSerial(bool useReceive, bool useTransmit);
+void InitializeSerial2(bool useReceive, bool useTransmit);
 
 // Must be called in an ISR.
 void SerialInterrupt();

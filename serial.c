@@ -38,10 +38,10 @@ unsigned char dataQueue;
 
 void InitializeSerial()
 {
-	InitializeSerial(true, false);
+	InitializeSerial2(true, false);
 }
 
-void InitializeSerial(bool useReceive, bool useTransmit)
+void InitializeSerial2(bool useReceive, bool useTransmit)
 {
 	// Initialize globals.
 	ser_hasData = 0;
