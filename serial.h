@@ -25,6 +25,7 @@ SERIAL_EXTERN bit ser_error;
 // Errors detected:
 //   F: Framing error - no stop bit received (actually, when we expected a stop bit, line was low)
 //   C: Collision (new data finished before old data read)
+//   c: Collision, soft (the buffer in this module has overflowed)
 SERIAL_EXTERN char ser_errorType;
 
 // After calling this, set GIE to start processing.

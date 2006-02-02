@@ -32,9 +32,22 @@
 #endif
 
 // The input queue.
-// Currently only one byte.
-unsigned char dataQueue;
-
+#ifdef SOFTWARE_RECEIVE
+	// Currently only one byte.
+	unsigned char dataQueue;
+#else
+	// A FIFO queue, growing forward in memory.
+	// Head is the first element added; Tail is the next one to be added.
+	// Head == Tail when empty.
+	// (Tail + 1) mod n == Head when full.
+	#define QUEUE_LENGTH  17
+	unsigned char dataQueue[QUEUE_LENGTH];
+	unsigned char* queueHead;
+	unsigned char* queueTail;
+	unsigned char* queueNextTail;
+	const unsigned char* queueEnd = dataQueue + QUEUE_LENGTH;  // one past the end
+	
+#endif
 
 void InitializeSerial()
 {
@@ -94,6 +107,9 @@ void InitializeSerial2(bool useReceive, bool useTransmit)
 		pie1.RCIE = 1;  // Enable interrupts on reception.
 		
 		intcon.PEIE = 1;
+		
+		queueHead = queueTail = dataQueue;
+		queueNextTail = queueTail + 1;
 	
 	#endif
 	}
@@ -201,8 +217,17 @@ void SerialInterrupt()
 				ser_errorType = 'C';
 				ser_error = 1;
 				ser_hasData = 0;
+			} else if (queueNextTail == queueHead) {  // queue is full
+				ser_error = 1;
+				ser_errorType = 'c';
 			} else {
-				dataQueue = rcreg;
+				*queueTail = rcreg;
+				
+				queueTail = queueNextTail;
+				
+				if (++queueNextTail == queueEnd)
+					queueNextTail = dataQueue;
+					
 				ser_error = 0;
 			}
 
@@ -214,8 +239,18 @@ void SerialInterrupt()
 
 unsigned char ReadSerial()
 {
-	unsigned char result = dataQueue;
+	unsigned char result;
+#ifdef SOFTWARE_RECEIVE
+	result = dataQueue;
 	ser_hasData = 0;
+#else
+	result = *queueHead;
+	
+	if (++queueHead == queueEnd)
+		queueHead = dataQueue;
+		
+	ser_hasData = (queueHead != queueTail);
+#endif
 	return result;
 }
 
