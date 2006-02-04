@@ -42,7 +42,10 @@ unsigned char ReadSerial();
 // Sends the specified character out the serial port.
 void WriteSerial(char c);
 
-// Sends the specified string out the serial port, null-terminated.
+// Sends the specified null-terminated string out the serial port.
 void WriteSerialString(char* s);
+
+// Sends the specified string out the serial port.
+void WriteSerialBuf(unsigned char* buf, unsigned char len);
 
 #endif

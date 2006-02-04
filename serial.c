@@ -266,3 +266,9 @@ void WriteSerialString(char* s)
 	while (*s != 0)
 		WriteSerial(*s++);
 }
+
+void WriteSerialBuf(unsigned char* buf, unsigned char len)
+{
+	while (len--)
+		WriteSerial(*buf++);
+}
