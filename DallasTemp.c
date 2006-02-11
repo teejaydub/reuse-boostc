@@ -19,7 +19,7 @@
 #define BitsToSense_LowRes  9
 
 // Conversion time in ms, for low-res sensing.
-#define ConversionTime_LowRes  (94 << (BitsToSense_LowRes - 9))
+#define ConversionTime_LowRes  ((94 << (BitsToSense_LowRes - 9)) + 1)
 
 unsigned char DT_CountSensors()
 {

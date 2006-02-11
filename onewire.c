@@ -15,7 +15,7 @@ char OW_Reset()
 	// Disable interrupts.
 	intcon.GIE = 0;
 
-	// Low for T_RSTL = 480 us.
+	// Low for T_RSTL >= 480 us.
 	OUTPUT_LOW;
 	
 	delay_10us(25);
@@ -95,6 +95,7 @@ unsigned char OW_ReadByte()
 
 		// HIZ for 4 us.
 		OUTPUT_HIZ;
+		nop();
 		nop();
 		nop();
 		nop();
