@@ -14,7 +14,6 @@
 // offset of the resolution bits in the config register
 #define DT_ConfigResOffset  5
 
-
 // The number of significant bits for low-res sensing.
 #define BitsToSense_LowRes  9
 
@@ -35,6 +34,10 @@ signed char DT_ReadTempRough(unsigned char sensor)
 	// Assume there's at most one sensor.
 	if (sensor > 0)
 		return DT_MIN_TEMP;
+		
+	// Check for the sensor one more time.
+	if (!OW_Reset())
+		return 0;
 
 	// Talk to whoever's attached (assuming one).
 	OW_SendByte(OW_SkipROM);

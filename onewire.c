@@ -5,9 +5,12 @@
 #include "onewire-const.h"
 
 
-#define OUTPUT_LOW  { clear_bit(OW_PORT, OW_PIN); clear_bit(OW_TRIS, OW_PIN); }
+#define OUTPUT_LOW  { clear_bit(ow_port, OW_PIN); clear_bit(ow_tris, OW_PIN); }
 
-#define OUTPUT_HIZ  set_bit(OW_TRIS, OW_PIN)
+#define OUTPUT_HIZ  set_bit(ow_tris, OW_PIN)
+
+volatile char ow_port@OW_PORT;
+volatile char ow_tris@OW_TRIS;
 
 
 char OW_Reset()
@@ -27,21 +30,21 @@ char OW_Reset()
 	// Wait until halfway between the end of the earliest, shortest possible presence detect pulse (75 us)
 	// and the beginning of the latest possible one (60 us).
 	// That's 67.5, so wait 60 + a few cycles.
-	delay_10us(6);
-	nop();
-	nop();
-	status.RP0 = 0;  // seems to be needed?!
+	// But we'll go with 70, since that's what the Dallas docs use.
+	delay_10us(7);
 	
 	// Test the result.
-	char result = OW_PORT.OW_PIN == 0;
+	status.RP0 = 0;  // seems to be needed?!
+	char result = ow_port.OW_PIN == 0;
 	
 	// Interrupts are OK now.
 	intcon.GIE = 1;
 	
 	// Allow it to complete for the remainder of T_RSTH = 480 us since Hi-Z.
 	// 480 - 60 = 420.
+	// The docs say 430, so use that.
 	delay_10us(20);
-	delay_10us(22);
+	delay_10us(23);
 	
 	return result;
 }
@@ -53,8 +56,10 @@ void OW_SendByte(unsigned char b)
 	// Disable interrupts.
 	intcon.GIE = 0;
 
-	do {
-		// Low for 4 us.
+	sendLoop:
+		// Low for 4 us (docs say 5 us).
+		nop();
+		nop();
 		OUTPUT_LOW;
 		nop();
 		nop();
@@ -65,15 +70,22 @@ void OW_SendByte(unsigned char b)
 		asm { 
 			rrf _b, F 
 		}
-		if (b.0)
-			set_bit(OW_PORT, OW_PIN);
+		if (status.C)
+			set_bit(ow_port, OW_PIN);
 			
 		// Wait for 60 us.
 		delay_10us(6);
 		
 		// Recovery time >= 1 us.
 		OUTPUT_HIZ;
-	} while (--bitCount);
+		
+		nop();
+		nop();
+		
+		asm {
+			decfsz _bitCount, F
+			goto sendLoop
+		}
 	
 	// Restore interrupts.
 	intcon.GIE = 1;
@@ -87,9 +99,15 @@ unsigned char OW_ReadByte()
 	// Disable interrupts.
 	intcon.GIE = 0;
 
-	do {
-		// Low for 1-2 us.
+	recLoop:
+		// Low for 6 us.
+		nop();
+		nop();
 		OUTPUT_LOW;
+		nop();
+		nop();
+		nop();
+		nop();
 		nop();
 		nop();
 
@@ -102,17 +120,28 @@ unsigned char OW_ReadByte()
 		nop();
 		
 		// Get the next bit.
+
+#if OW_PIN != 4
+ #error Have to hard-code the pin constant here, unfortunately.
+#endif
 		asm { 
-			rrf _result, F 
+			movf _ow_port, W
+			andlw 0x10  // OW_PIN << 4
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
 		}
-		if (OW_PORT.OW_PIN)  // this should happen <= 15 ms from when the output goes low, but close to it.
-			set_bit(result, 7);
-		else
-			clear_bit(result, 7);
+//		if (OW_PORT.OW_PIN)  // this should happen <= 15 ms from when the output goes low, but close to it.
+//			set_bit(result, 7);
+//		else
+//			clear_bit(result, 7);
 		
 		// Total time must be > 61 us.
-		delay_10us(6);
-	} while (--bitCount);
+		delay_10us(5);
+	
+		asm {
+			decfsz _bitCount, F
+			goto recLoop
+		}
 	
 	// Restore interrupts.
 	intcon.GIE = 1;
