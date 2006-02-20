@@ -12,3 +12,9 @@ unsigned char DT_CountSensors();
 // Returned range is -55 to 125 degrees C.
 // If the specified sensor doesn't exist, the minimum temperature is returned.
 signed char DT_ReadTempRough(unsigned char sensor);
+
+// Reads the temperature to the highest resolution possible,
+// and returns it as 16-bit fixed point (8 bits integer, 8 bits fractional).
+// Returned range is -55 to 125 degrees C.
+// If the specified sensor doesn't exist, the minimum temperature is returned.
+signed short DT_ReadTempFine(unsigned char sensor);
