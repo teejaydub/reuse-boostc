@@ -14,3 +14,6 @@ inline char read_eeprom(char addr)
 	set_bit(eecon1, RD);
 	return eedata;
 }
+
+void read_eeprom_block(char addr, char* buf, unsigned char len);
+void write_eeprom_block(char addr, char* buf, unsigned char len);

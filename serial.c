@@ -246,6 +246,7 @@ unsigned char ReadSerial()
 #else
 	result = *queueHead;
 	
+	// Increment and handle rollover.
 	if (++queueHead == queueEnd)
 		queueHead = dataQueue;
 		
