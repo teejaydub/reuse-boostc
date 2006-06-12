@@ -1,8 +1,9 @@
-/* Define OW_PORT, OW_TRIS, and OW_PIN. */
+/* Define the port, tri-state reg, and pin. */
 
-#define OW_PORT  porta
-#define OW_TRIS  trisa
-#define OW_PIN  4
+#define OW_PIN  1
+
+volatile char ow_port@0x0005;  // PORTA
+volatile char ow_tris@0x0085;  // TRISA
 
 // Don't modify this.
 #define OW_MASK  (1 << OW_PIN)

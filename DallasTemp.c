@@ -32,7 +32,7 @@ unsigned char DT_CountSensors()
 		return 0;
 }
 
-signed short DoRead(unsigned char configReg, unsigned short conversionTime)
+void StartRead(unsigned char configReg)
 {
 	// Talk to whoever's attached (assuming one).
 	OW_SendByte(OW_SkipROM);
@@ -48,6 +48,11 @@ signed short DoRead(unsigned char configReg, unsigned short conversionTime)
 	// Start temperature conversion.
 	OW_SendByte(OW_SkipROM);
 	OW_SendByte(DT_ConvertT);
+}
+
+signed short DoRead(unsigned char configReg, unsigned short conversionTime)
+{
+	StartRead(configReg);
 	
 	// Wait for it to finish.
 	while (conversionTime > 255) {
@@ -55,24 +60,8 @@ signed short DoRead(unsigned char configReg, unsigned short conversionTime)
 		conversionTime -= 255;
 	}
 	delay_ms((unsigned char)(conversionTime));
-
-	// Read the temperature value.
-	OW_Reset();
-	OW_SendByte(OW_SkipROM);
-	OW_SendByte(DT_ReadScratchPad);
 	
-	unsigned char lsb = OW_ReadByte();
-	signed char msb = OW_ReadByte();
-	
-	// Adjust to a sane representation.
-	signed short result = (msb << 8) | lsb;
-	result <<= 4;
-	
-	// That's all we need, but it's going to keep sending the rest of its memory.
-	// We'd be bored by that, so reset the bus.
-	OW_Reset();
-	
-	return result;
+	return DT_GetLastTemp(0);
 }
 
 signed char DT_ReadTempRough(unsigned char sensor)
@@ -110,3 +99,43 @@ signed short DT_ReadTempFine(unsigned char sensor)
 			(BitsToSense_HighRes - 9) << DT_ConfigResOffset, 
 			ConversionTime_HighRes);
 }
+
+unsigned char DT_StartReadFine(unsigned char sensor)
+{
+	// Assume there's at most one sensor.
+	if (sensor > 0 || !OW_Reset())
+		return 0;
+	else { 
+		StartRead((BitsToSense_HighRes - 9) << DT_ConfigResOffset);
+		return 1;
+	}
+}
+
+unsigned char DT_ReadDone(unsigned char sensor)
+{
+	return OW_ReadByte();
+}
+
+signed short DT_GetLastTemp(unsigned char sensor)
+{
+	// Read the temperature value.
+	if (!OW_Reset())
+		return 0;
+		
+	OW_SendByte(OW_SkipROM);
+	OW_SendByte(DT_ReadScratchPad);
+	
+	unsigned char lsb = OW_ReadByte();
+	signed char msb = OW_ReadByte();
+	
+	// Adjust to a sane representation.
+	signed short result = (msb << 8) | lsb;
+	result <<= 4;
+	
+	// That's all we need, but it's going to keep sending the rest of its memory.
+	// We'd be bored by that, so reset the bus.
+	OW_Reset();
+	
+	return result;
+}
+

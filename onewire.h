@@ -2,6 +2,8 @@
 	Software support for Dallas 1-Wire protocol, as master.
 	
 	To use, define constants in onewire-const.h.
+	
+	And, be sure to activate either internal or external pullup on the pin.
 */
 	
 // Defines for 1-Wire commands

@@ -9,9 +9,6 @@
 
 #define OUTPUT_HIZ  set_bit(ow_tris, OW_PIN)
 
-volatile char ow_port@OW_PORT;
-volatile char ow_tris@OW_TRIS;
-
 
 char OW_Reset()
 {
@@ -121,12 +118,12 @@ unsigned char OW_ReadByte()
 		
 		// Get the next bit.
 
-#if OW_PIN != 4
+#if OW_MASK != 0x02
  #error Have to hard-code the pin constant here, unfortunately.
 #endif
 		asm { 
 			movf _ow_port, W
-			andlw 0x10  // OW_PIN << 4
+			andlw 0x02  // OW_MASK
 			addlw 255  // C = 1 iff the next input bit = 1
 			rrf _result, F
 		}
