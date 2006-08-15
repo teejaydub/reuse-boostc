@@ -3,10 +3,16 @@
 	Requires onewire.c, which requires onewire-const.h.
 	
 	Be sure to use an internal or external pullup on the 1-Wire bus pin.
+	
+	And, if you want to support parasite power, don't call DT_ReadDone - 
+	either use ReadTemp*, or time the conversion yourself.	
 */
 
 #define DT_MIN_TEMP  -55
 #define DT_MAX_TEMP  125
+
+// This is returned for the first temperature reading.
+#define DT_POWERUP_TEMP  85
 
 // Returns the number of sensors connected.
 unsigned char DT_CountSensors();

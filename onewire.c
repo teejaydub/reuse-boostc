@@ -7,6 +7,8 @@
 
 #define OUTPUT_LOW  { clear_bit(ow_port, OW_PIN); clear_bit(ow_tris, OW_PIN); }
 
+#define OUTPUT_HIGH  { set_bit(ow_port, OW_PIN); clear_bit(ow_tris, OW_PIN); }
+
 #define OUTPUT_HIZ  set_bit(ow_tris, OW_PIN)
 
 
@@ -88,6 +90,65 @@ void OW_SendByte(unsigned char b)
 	intcon.GIE = 1;
 }
 
+byte OW_ReadBit()
+{
+	byte result = 0;
+	
+	// Disable interrupts.
+	intcon.GIE = 0;
+	
+		// Low for 6 us.
+		nop();
+		nop();
+		OUTPUT_LOW;
+		nop();
+		nop();
+		nop();
+		nop();
+		nop();
+		nop();
+
+		// HIZ for 4 us.
+		OUTPUT_HIZ;
+		nop();
+		nop();
+		nop();
+		nop();
+		nop();
+		
+		// Get the next bit.
+
+//		if (OW_PORT.OW_PIN)  // this should happen <= 15 ms from when the output goes low, but close to it.
+//			set_bit(result, 7);
+//		else
+//			clear_bit(result, 7);
+#if OW_MASK == 0x01
+		asm { 
+			movf _ow_port, W
+			andlw 0x01  // OW_MASK
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
+		}
+#elif OW_MASK == 0x10
+		asm { 
+			movf _ow_port, W
+			andlw 0x10  // OW_MASK
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
+		}
+#else
+ #error Have to hard-code the pin constant here, unfortunately.
+#endif
+		
+		// Total time must be > 61 us.
+		delay_10us(5);
+	
+	// Restore interrupts.
+	intcon.GIE = 1;
+	
+	return result;
+}
+
 unsigned char OW_ReadByte()
 {
 	unsigned char bitCount = 8;
@@ -118,19 +179,27 @@ unsigned char OW_ReadByte()
 		
 		// Get the next bit.
 
-#if OW_MASK != 0x02
- #error Have to hard-code the pin constant here, unfortunately.
-#endif
-		asm { 
-			movf _ow_port, W
-			andlw 0x02  // OW_MASK
-			addlw 255  // C = 1 iff the next input bit = 1
-			rrf _result, F
-		}
 //		if (OW_PORT.OW_PIN)  // this should happen <= 15 ms from when the output goes low, but close to it.
 //			set_bit(result, 7);
 //		else
 //			clear_bit(result, 7);
+#if OW_MASK == 0x01
+		asm { 
+			movf _ow_port, W
+			andlw 0x01  // OW_MASK
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
+		}
+#elif OW_MASK == 0x10
+		asm { 
+			movf _ow_port, W
+			andlw 0x10  // OW_MASK
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
+		}
+#else
+ #error Have to hard-code the pin constant here, unfortunately.
+#endif
 		
 		// Total time must be > 61 us.
 		delay_10us(5);
@@ -146,3 +215,7 @@ unsigned char OW_ReadByte()
 	return result;
 }
 
+void OW_PowerOn()
+{
+	OUTPUT_HIGH;
+}

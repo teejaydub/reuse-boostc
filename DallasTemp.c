@@ -1,6 +1,7 @@
 #include <system.h>
 
 #include "onewire.h"
+#include "types-tjw.h"
 
 #include "DallasTemp.h"
 
@@ -10,6 +11,7 @@
 #define DT_ReadScratchPad  0xBE
 #define DT_WriteScratchPad  0x4E
 #define DT_CopyScratchPad  0x48
+#define DT_ReadPowerSupply  0xB4
 	
 // offset of the resolution bits in the config register
 #define DT_ConfigResOffset  5
@@ -32,8 +34,17 @@ unsigned char DT_CountSensors()
 		return 0;
 }
 
+byte DT_IsParasite()
+{
+	OW_SendByte(OW_SkipROM);
+	OW_SendByte(DT_ReadPowerSupply);
+	return !OW_ReadBit();  // parasite-powered devices pull the bus low.
+}
+
 void StartRead(unsigned char configReg)
 {
+	byte useParasite = DT_IsParasite();
+	
 	// Talk to whoever's attached (assuming one).
 	OW_SendByte(OW_SkipROM);
 	
@@ -48,6 +59,10 @@ void StartRead(unsigned char configReg)
 	// Start temperature conversion.
 	OW_SendByte(OW_SkipROM);
 	OW_SendByte(DT_ConvertT);
+	
+	// Support parasite power.
+	if (useParasite) 
+		OW_PowerOn();
 }
 
 signed short DoRead(unsigned char configReg, unsigned short conversionTime)

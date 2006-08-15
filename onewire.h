@@ -5,6 +5,8 @@
 	
 	And, be sure to activate either internal or external pullup on the pin.
 */
+
+#include "types-tjw.h"
 	
 // Defines for 1-Wire commands
 
@@ -23,3 +25,10 @@ void OW_SendByte(unsigned char b);
 
 // Reads a byte from the bus.
 unsigned char OW_ReadByte();
+
+// Reads a single bit from the bus.
+// Returns nonzero if it's one, zero if it's zero.
+byte OW_ReadBit();
+
+// Drives power to the bus until the next operation.
+void OW_PowerOn();
