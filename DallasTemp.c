@@ -25,49 +25,76 @@
 #define ConversionTime_HighRes  751
 
 
-unsigned char DT_CountSensors()
+unsigned char DT_CountSensors(byte bus)
 {
 	// For now, assume we have at most one sensor connected.
-	if (OW_Reset())
+	if (OWB_Reset(bus))
 		return 1;
 	else
 		return 0;
 }
 
-byte DT_IsParasite()
+byte DT_IsParasite(byte bus)
 {
-	OW_SendByte(OW_SkipROM);
-	OW_SendByte(DT_ReadPowerSupply);
-	return !OW_ReadBit();  // parasite-powered devices pull the bus low.
+	if (bus) {
+		OW_SendByte_2(OW_SkipROM);
+		OW_SendByte_2(DT_ReadPowerSupply);
+		return !OW_ReadBit_2();  // parasite-powered devices pull the bus low.
+	} else {
+		OW_SendByte(OW_SkipROM);
+		OW_SendByte(DT_ReadPowerSupply);
+		return !OW_ReadBit();  // parasite-powered devices pull the bus low.
+	}
 }
 
-void StartRead(unsigned char configReg)
+void StartRead(byte bus, unsigned char configReg)
 {
-	byte useParasite = DT_IsParasite();
+	byte useParasite = DT_IsParasite(bus);
 	
-	// Talk to whoever's attached (assuming one).
-	OW_SendByte(OW_SkipROM);
-	
-	// Configure for low resolution.
-	OW_SendByte(DT_WriteScratchPad);
-	OW_SendByte(DT_MAX_TEMP);  // Alarm THigh (disable).
-	OW_SendByte(DT_MIN_TEMP - 1);  // Alarm TLow (disable).
-	OW_SendByte(configReg);  // Resolution.
-	
-	OW_Reset();  // Don't need to write anything else.
-
-	// Start temperature conversion.
-	OW_SendByte(OW_SkipROM);
-	OW_SendByte(DT_ConvertT);
-	
-	// Support parasite power.
-	if (useParasite) 
-		OW_PowerOn();
+	if (bus) {
+		// Talk to whoever's attached (assuming one).
+		OW_SendByte_2(OW_SkipROM);
+		
+		// Configure for low resolution.
+		OW_SendByte_2(DT_WriteScratchPad);
+		OW_SendByte_2(DT_MAX_TEMP);  // Alarm THigh (disable).
+		OW_SendByte_2(DT_MIN_TEMP - 1);  // Alarm TLow (disable).
+		OW_SendByte_2(configReg);  // Resolution.
+		
+		OW_Reset_2();  // Don't need to write anything else.
+		
+		// Start temperature conversion.
+		OW_SendByte_2(OW_SkipROM);
+		OW_SendByte_2(DT_ConvertT);
+		
+		// Support parasite power.
+		if (useParasite) 
+			OW_PowerOn_2();
+	} else {
+		// Talk to whoever's attached (assuming one).
+		OW_SendByte(OW_SkipROM);
+		
+		// Configure for low resolution.
+		OW_SendByte(DT_WriteScratchPad);
+		OW_SendByte(DT_MAX_TEMP);  // Alarm THigh (disable).
+		OW_SendByte(DT_MIN_TEMP - 1);  // Alarm TLow (disable).
+		OW_SendByte(configReg);  // Resolution.
+		
+		OW_Reset();  // Don't need to write anything else.
+		
+		// Start temperature conversion.
+		OW_SendByte(OW_SkipROM);
+		OW_SendByte(DT_ConvertT);
+		
+		// Support parasite power.
+		if (useParasite) 
+			OW_PowerOn();
+	}
 }
 
-signed short DoRead(unsigned char configReg, unsigned short conversionTime)
+signed short DoRead(byte bus, unsigned char configReg, unsigned short conversionTime)
 {
-	StartRead(configReg);
+	StartRead(bus, configReg);
 	
 	// Wait for it to finish.
 	while (conversionTime > 255) {
@@ -79,17 +106,17 @@ signed short DoRead(unsigned char configReg, unsigned short conversionTime)
 	return DT_GetLastTemp(0);
 }
 
-signed char DT_ReadTempRough(unsigned char sensor)
+signed char DT_ReadTempRough(byte bus)
 {
-	// Assume there's at most one sensor.
-	if (sensor > 0)
+	// The bus can only be 0 or 1.
+	if (bus > 1)
 		return DT_MIN_TEMP;
 		
 	// Check for the sensor one more time.
-	if (!OW_Reset())
+	if (!OWB_Reset(bus))
 		return 0;
 		
-	short value = DoRead(
+	short value = DoRead(bus, 
 		(BitsToSense_LowRes - 9) << DT_ConfigResOffset, 
 		ConversionTime_LowRes);
 
@@ -104,44 +131,44 @@ signed char DT_ReadTempRough(unsigned char sensor)
 		return result;
 }
 
-signed short DT_ReadTempFine(unsigned char sensor)
+signed short DT_ReadTempFine(byte bus)
 {
-	// Assume there's at most one sensor.
-	if (sensor > 0 || !OW_Reset())
+	// The bus can only be 0 or 1, and it must have something on it.
+	if (bus > 1 || !OWB_Reset(bus))
 		return 0;
 	else 
-		return DoRead(
+		return DoRead(bus, 
 			(BitsToSense_HighRes - 9) << DT_ConfigResOffset, 
 			ConversionTime_HighRes);
 }
 
-unsigned char DT_StartReadFine(unsigned char sensor)
+unsigned char DT_StartReadFine(byte bus)
 {
-	// Assume there's at most one sensor.
-	if (sensor > 0 || !OW_Reset())
+	// The bus can only be 0 or 1, and it must have something on it.
+	if (bus > 1 || !OWB_Reset(bus))
 		return 0;
 	else { 
-		StartRead((BitsToSense_HighRes - 9) << DT_ConfigResOffset);
+		StartRead(bus, (BitsToSense_HighRes - 9) << DT_ConfigResOffset);
 		return 1;
 	}
 }
 
-unsigned char DT_ReadDone(unsigned char sensor)
+unsigned char DT_ReadDone(byte bus)
 {
-	return OW_ReadByte();
+	return OWB_ReadByte(bus);
 }
 
-signed short DT_GetLastTemp(unsigned char sensor)
+signed short DT_GetLastTemp(byte bus)
 {
 	// Read the temperature value.
-	if (!OW_Reset())
+	if (!OWB_Reset(bus))
 		return 0;
 		
-	OW_SendByte(OW_SkipROM);
-	OW_SendByte(DT_ReadScratchPad);
+	OWB_SendByte(bus, OW_SkipROM);
+	OWB_SendByte(bus, DT_ReadScratchPad);
 	
-	unsigned char lsb = OW_ReadByte();
-	signed char msb = OW_ReadByte();
+	unsigned char lsb = OWB_ReadByte(bus);
+	signed char msb = OWB_ReadByte(bus);
 	
 	// Adjust to a sane representation.
 	signed short result = (msb << 8) | lsb;
@@ -149,7 +176,7 @@ signed short DT_GetLastTemp(unsigned char sensor)
 	
 	// That's all we need, but it's going to keep sending the rest of its memory.
 	// We'd be bored by that, so reset the bus.
-	OW_Reset();
+	OWB_Reset(bus);
 	
 	return result;
 }

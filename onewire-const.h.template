@@ -2,8 +2,12 @@
 
 #define OW_PIN  1
 
+// Second bus - irrelevant unless you call one of the *_2 functions.
+#define OW_PIN2  5
+
 volatile char ow_port@0x0005;  // PORTA
 volatile char ow_tris@0x0085;  // TRISA
 
 // Don't modify this.
 #define OW_MASK  (1 << OW_PIN)
+#define OW_MASK_2  (1 << OW_PIN_2)

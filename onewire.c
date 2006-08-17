@@ -6,10 +6,13 @@
 
 
 #define OUTPUT_LOW  { clear_bit(ow_port, OW_PIN); clear_bit(ow_tris, OW_PIN); }
+#define OUTPUT_LOW_2  { clear_bit(ow_port, OW_PIN_2); clear_bit(ow_tris, OW_PIN_2); }
 
 #define OUTPUT_HIGH  { set_bit(ow_port, OW_PIN); clear_bit(ow_tris, OW_PIN); }
+#define OUTPUT_HIGH_2  { set_bit(ow_port, OW_PIN_2); clear_bit(ow_tris, OW_PIN_2); }
 
 #define OUTPUT_HIZ  set_bit(ow_tris, OW_PIN)
+#define OUTPUT_HIZ_2  set_bit(ow_tris, OW_PIN_2)
 
 
 char OW_Reset()
@@ -218,4 +221,259 @@ unsigned char OW_ReadByte()
 void OW_PowerOn()
 {
 	OUTPUT_HIGH;
+}
+
+//=============================================================================
+// Functions for the second bus.
+// Identical to the first, except they use all the _2 macros.
+
+char OW_Reset_2()
+{
+	// Disable interrupts.
+	intcon.GIE = 0;
+
+	// Low for T_RSTL >= 480 us.
+	OUTPUT_LOW_2;
+	
+	delay_10us(25);
+	delay_10us(25);
+	
+	// Hi-Z.
+	OUTPUT_HIZ_2;
+	
+	// Wait until halfway between the end of the earliest, shortest possible presence detect pulse (75 us)
+	// and the beginning of the latest possible one (60 us).
+	// That's 67.5, so wait 60 + a few cycles.
+	// But we'll go with 70, since that's what the Dallas docs use.
+	delay_10us(7);
+	
+	// Test the result.
+	status.RP0 = 0;  // seems to be needed?!
+	char result = ow_port.OW_PIN_2 == 0;
+	
+	// Interrupts are OK now.
+	intcon.GIE = 1;
+	
+	// Allow it to complete for the remainder of T_RSTH = 480 us since Hi-Z.
+	// 480 - 60 = 420.
+	// The docs say 430, so use that.
+	delay_10us(20);
+	delay_10us(23);
+	
+	return result;
+}
+
+void OW_SendByte_2(unsigned char b)
+{
+	unsigned char bitCount = 8;
+	
+	// Disable interrupts.
+	intcon.GIE = 0;
+
+	sendLoop2:
+		// Low for 4 us (docs say 5 us).
+		nop();
+		nop();
+		OUTPUT_LOW_2;
+		nop();
+		nop();
+		nop();
+		nop();
+		
+		// Output the next bit.
+		asm { 
+			rrf _b, F 
+		}
+		if (status.C)
+			set_bit(ow_port, OW_PIN_2);
+			
+		// Wait for 60 us.
+		delay_10us(6);
+		
+		// Recovery time >= 1 us.
+		OUTPUT_HIZ_2;
+		
+		nop();
+		nop();
+		
+		asm {
+			decfsz _bitCount, F
+			goto sendLoop2
+		}
+	
+	// Restore interrupts.
+	intcon.GIE = 1;
+}
+
+byte OW_ReadBit_2()
+{
+	byte result = 0;
+	
+	// Disable interrupts.
+	intcon.GIE = 0;
+	
+		// Low for 6 us.
+		nop();
+		nop();
+		OUTPUT_LOW_2;
+		nop();
+		nop();
+		nop();
+		nop();
+		nop();
+		nop();
+
+		// HIZ for 4 us.
+		OUTPUT_HIZ_2;
+		nop();
+		nop();
+		nop();
+		nop();
+		nop();
+		
+		// Get the next bit.
+
+//		if (OW_PORT.OW_PIN_2)  // this should happen <= 15 ms from when the output goes low, but close to it.
+//			set_bit(result, 7);
+//		else
+//			clear_bit(result, 7);
+#if OW_MASK_2 == 0x20
+		asm { 
+			movf _ow_port, W
+			andlw 0x20  // OW_MASK_2
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
+		}
+#elif OW_MASK_2 == 0x10
+		asm { 
+			movf _ow_port, W
+			andlw 0x10  // OW_MASK_2
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
+		}
+#else
+ #error Have to hard-code the pin constant here, unfortunately.
+#endif
+		
+		// Total time must be > 61 us.
+		delay_10us(5);
+	
+	// Restore interrupts.
+	intcon.GIE = 1;
+	
+	return result;
+}
+
+unsigned char OW_ReadByte_2()
+{
+	unsigned char bitCount = 8;
+	unsigned char result = 0;
+	
+	// Disable interrupts.
+	intcon.GIE = 0;
+
+	recLoop2:
+		// Low for 6 us.
+		nop();
+		nop();
+		OUTPUT_LOW_2;
+		nop();
+		nop();
+		nop();
+		nop();
+		nop();
+		nop();
+
+		// HIZ for 4 us.
+		OUTPUT_HIZ_2;
+		nop();
+		nop();
+		nop();
+		nop();
+		nop();
+		
+		// Get the next bit.
+
+//		if (OW_PORT.OW_PIN_2)  // this should happen <= 15 ms from when the output goes low, but close to it.
+//			set_bit(result, 7);
+//		else
+//			clear_bit(result, 7);
+#if OW_MASK_2 == 0x20
+		asm { 
+			movf _ow_port, W
+			andlw 0x20  // OW_MASK_2
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
+		}
+#elif OW_MASK_2 == 0x10
+		asm { 
+			movf _ow_port, W
+			andlw 0x10  // OW_MASK_2
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
+		}
+#else
+ #error Have to hard-code the pin constant here, unfortunately.
+#endif
+		
+		// Total time must be > 61 us.
+		delay_10us(5);
+	
+		asm {
+			decfsz _bitCount, F
+			goto recLoop2
+		}
+	
+	// Restore interrupts.
+	intcon.GIE = 1;
+	
+	return result;
+}
+
+void OW_PowerOn_2()
+{
+	OUTPUT_HIGH_2;
+}
+
+//=============================================================================
+// Bus-parameterized functions.
+
+char OWB_Reset(byte bus)
+{
+	if (bus)
+		return OW_Reset_2();
+	else
+		return OW_Reset();
+}
+
+void OWB_SendByte(byte bus, unsigned char b)
+{
+	if (bus)
+		OW_SendByte_2(b);
+	else
+		OW_SendByte(b);
+}
+
+byte OWB_ReadByte(byte bus)
+{
+	if (bus)
+		return OW_ReadByte_2();
+	else
+		return OW_ReadByte();
+}
+
+byte OWB_ReadBit(byte bus)
+{
+	if (bus)
+		return OW_ReadBit_2();
+	else
+		return OW_ReadBit();
+}
+
+void OWB_PowerOn(byte bus)
+{
+	if (bus)
+		OW_PowerOn_2();
+	else
+		OW_PowerOn();
 }
