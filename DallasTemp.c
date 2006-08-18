@@ -163,13 +163,24 @@ signed short DT_GetLastTemp(byte bus)
 	// Read the temperature value.
 	if (!OWB_Reset(bus))
 		return 0;
+
+	unsigned char lsb;
+	signed char msb;
+
+	if (bus) {	
+		OW_SendByte_2(OW_SkipROM);
+		OW_SendByte_2(DT_ReadScratchPad);
 		
-	OWB_SendByte(bus, OW_SkipROM);
-	OWB_SendByte(bus, DT_ReadScratchPad);
-	
-	unsigned char lsb = OWB_ReadByte(bus);
-	signed char msb = OWB_ReadByte(bus);
-	
+		lsb = OW_ReadByte_2();
+		msb = OW_ReadByte_2();
+	} else {
+		OW_SendByte(OW_SkipROM);
+		OW_SendByte(DT_ReadScratchPad);
+		
+		lsb = OW_ReadByte();
+		msb = OW_ReadByte();
+	}
+		
 	// Adjust to a sane representation.
 	signed short result = (msb << 8) | lsb;
 	result <<= 4;
