@@ -9,6 +9,7 @@
 #include <system.h>
 
 #include "serial.h"
+#include "serial-consts.h"
 
 
 #ifdef SOFTWARE_RECEIVE
@@ -40,12 +41,11 @@
 	// Head is the first element added; Tail is the next one to be added.
 	// Head == Tail when empty.
 	// (Tail + 1) mod n == Head when full.
-	#define QUEUE_LENGTH  17
-	unsigned char dataQueue[QUEUE_LENGTH];
+	unsigned char dataQueue[SERIAL_QUEUE_LENGTH];
 	unsigned char* queueHead;
 	unsigned char* queueTail;
 	unsigned char* queueNextTail;
-	const unsigned char* queueEnd = dataQueue + QUEUE_LENGTH;  // one past the end
+	const unsigned char* queueEnd = dataQueue + SERIAL_QUEUE_LENGTH;  // one past the end
 	
 #endif
 
