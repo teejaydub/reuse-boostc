@@ -7,7 +7,7 @@
 
 #include "types-tjw.h"
 
-#ifdef IN_SHADOW_REGS
+#ifdef IN_SHADOWREGS
  #define SHADOW_REGS_EXTERN
 #else
  #define SHADOW_REGS_EXTERN  extern

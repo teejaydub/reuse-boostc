@@ -123,7 +123,10 @@ signed char DT_ReadTempRough(byte bus)
 	// Construct the return value from the two value bytes.
 	signed char result = value >> 8;
 	
-	if (test_bit(value[1], 7))  // 2^-1 bit
+	unsigned char lsb;
+	LOBYTE(lsb, value);
+	
+	if (lsb.7)  // 2^-1 bit
 		// round up
 		return result + 1;
 	else

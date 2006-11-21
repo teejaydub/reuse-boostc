@@ -132,6 +132,13 @@ byte OW_ReadBit()
 			addlw 255  // C = 1 iff the next input bit = 1
 			rrf _result, F
 		}
+#elif OW_MASK == 0x08
+		asm { 
+			movf _ow_port, W
+			andlw 0x08  // OW_MASK
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
+		}
 #elif OW_MASK == 0x10
 		asm { 
 			movf _ow_port, W
@@ -190,6 +197,13 @@ unsigned char OW_ReadByte()
 		asm { 
 			movf _ow_port, W
 			andlw 0x01  // OW_MASK
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
+		}
+#elif OW_MASK == 0x08
+		asm { 
+			movf _ow_port, W
+			andlw 0x08  // OW_MASK
 			addlw 255  // C = 1 iff the next input bit = 1
 			rrf _result, F
 		}
@@ -344,6 +358,13 @@ byte OW_ReadBit_2()
 			addlw 255  // C = 1 iff the next input bit = 1
 			rrf _result, F
 		}
+#elif OW_MASK_2 == 0x04
+		asm { 
+			movf _ow_port, W
+			andlw 0x04  // OW_MASK_2
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
+		}
 #elif OW_MASK_2 == 0x10
 		asm { 
 			movf _ow_port, W
@@ -402,6 +423,13 @@ unsigned char OW_ReadByte_2()
 		asm { 
 			movf _ow_port, W
 			andlw 0x20  // OW_MASK_2
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
+		}
+#elif OW_MASK_2 == 0x04
+		asm { 
+			movf _ow_port, W
+			andlw 0x04  // OW_MASK_2
 			addlw 255  // C = 1 iff the next input bit = 1
 			rrf _result, F
 		}
