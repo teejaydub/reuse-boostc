@@ -254,22 +254,3 @@ unsigned char ReadSerial()
 #endif
 	return result;
 }
-
-void WriteSerial(char c)
-{
-	while (!pir1.TXIF)
-		;
-	txreg = c;
-}
-
-void WriteSerialString(char* s)
-{
-	while (*s != 0)
-		WriteSerial(*s++);
-}
-
-void WriteSerialBuf(unsigned char* buf, unsigned char len)
-{
-	while (len--)
-		WriteSerial(*buf++);
-}

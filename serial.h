@@ -40,12 +40,25 @@ void SerialInterrupt();
 unsigned char ReadSerial();
 
 // Sends the specified character out the serial port.
-void WriteSerial(char c);
+inline void WriteSerial(char c)
+{
+	while (!pir1.TXIF)
+		;
+	txreg = c;
+}
 
 // Sends the specified null-terminated string out the serial port.
-void WriteSerialString(char* s);
+inline void WriteSerialString(char* s)
+{
+	while (*s != 0)
+		WriteSerial(*s++);
+}
 
 // Sends the specified string out the serial port.
-void WriteSerialBuf(unsigned char* buf, unsigned char len);
+inline void WriteSerialBuf(unsigned char* buf, unsigned char len)
+{
+	while (len--)
+		WriteSerial(*buf++);
+}
 
 #endif
