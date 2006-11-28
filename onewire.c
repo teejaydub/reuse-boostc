@@ -5,11 +5,11 @@
 #include "onewire-const.h"
 
 
-#define OUTPUT_LOW  { clear_bit(ow_port, OW_PIN); clear_bit(ow_tris, OW_PIN); }
-#define OUTPUT_LOW_2  { clear_bit(ow_port, OW_PIN_2); clear_bit(ow_tris, OW_PIN_2); }
+#define OUTPUT_LOW  { clear_bit(ow_port_, OW_PIN); ow_port = ow_port_; clear_bit(ow_tris, OW_PIN); }
+#define OUTPUT_LOW_2  { clear_bit(ow_port_, OW_PIN_2); ow_port = ow_port_; clear_bit(ow_tris, OW_PIN_2); }
 
-#define OUTPUT_HIGH  { set_bit(ow_port, OW_PIN); clear_bit(ow_tris, OW_PIN); }
-#define OUTPUT_HIGH_2  { set_bit(ow_port, OW_PIN_2); clear_bit(ow_tris, OW_PIN_2); }
+#define OUTPUT_HIGH  { set_bit(ow_port_, OW_PIN); ow_port = ow_port_; clear_bit(ow_tris, OW_PIN); }
+#define OUTPUT_HIGH_2  { set_bit(ow_port_, OW_PIN_2); ow_port = ow_port_; clear_bit(ow_tris, OW_PIN_2); }
 
 #define OUTPUT_HIZ  set_bit(ow_tris, OW_PIN)
 #define OUTPUT_HIZ_2  set_bit(ow_tris, OW_PIN_2)
@@ -65,8 +65,6 @@ void OW_SendByte(unsigned char b)
 		OUTPUT_LOW;
 		nop();
 		nop();
-		nop();
-		nop();
 		
 		// Output the next bit.
 		asm { 
@@ -104,8 +102,6 @@ byte OW_ReadBit()
 		nop();
 		nop();
 		OUTPUT_LOW;
-		nop();
-		nop();
 		nop();
 		nop();
 		nop();
@@ -172,8 +168,6 @@ unsigned char OW_ReadByte()
 		nop();
 		nop();
 		OUTPUT_LOW;
-		nop();
-		nop();
 		nop();
 		nop();
 		nop();
@@ -291,8 +285,6 @@ void OW_SendByte_2(unsigned char b)
 		OUTPUT_LOW_2;
 		nop();
 		nop();
-		nop();
-		nop();
 		
 		// Output the next bit.
 		asm { 
@@ -330,8 +322,6 @@ byte OW_ReadBit_2()
 		nop();
 		nop();
 		OUTPUT_LOW_2;
-		nop();
-		nop();
 		nop();
 		nop();
 		nop();
@@ -398,8 +388,6 @@ unsigned char OW_ReadByte_2()
 		nop();
 		nop();
 		OUTPUT_LOW_2;
-		nop();
-		nop();
 		nop();
 		nop();
 		nop();
