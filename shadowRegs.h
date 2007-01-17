@@ -18,7 +18,7 @@ SHADOW_REGS_EXTERN byte portb_;
 SHADOW_REGS_EXTERN byte portc_;
 
 // Sets the specified shadowed register, changing only the masked bits.
-#define SET_SHADOW(regName, shadowReg, newValue, mask)  { shadowReg = (shadowReg & (~(mask))) | newValue; regName = shadowReg; }
+#define SET_SHADOW(regName, shadowReg, newValue, mask)  { shadowReg = (shadowReg & (~(mask))) | (newValue & mask); regName = shadowReg; }
 	
 // Sets the given shadowed pin.
 #define SET_SHADOW_PIN(regName, shadowReg, newValue, pin)  { shadowReg = (shadowReg & (~(BITMASK(pin))) | (newValue? BITMASK(pin): 0); regName = shadowReg; }
