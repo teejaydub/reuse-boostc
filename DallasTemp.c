@@ -161,7 +161,7 @@ unsigned char DT_ReadDone(byte bus)
 	return OWB_ReadByte(bus);
 }
 
-signed short DT_GetLastTemp(byte bus)
+fixed16 DT_GetLastTemp(byte bus)
 {
 	// Read the temperature value.
 	if (!OWB_Reset(bus))
@@ -185,7 +185,7 @@ signed short DT_GetLastTemp(byte bus)
 	}
 		
 	// Adjust to a sane representation.
-	signed short result = (msb << 8) | lsb;
+	fixed16 result = makeFixed(msb, lsb);
 	result <<= 4;
 	
 	// That's all we need, but it's going to keep sending the rest of its memory.

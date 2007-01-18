@@ -15,6 +15,7 @@
 */
 
 #include "types-tjw.h"
+#include "fixed16.h"
 
 #define DT_MIN_TEMP  -55
 #define DT_MAX_TEMP  125
@@ -51,4 +52,4 @@ unsigned char DT_StartReadFine(byte bus);
 unsigned char DT_ReadDone(byte bus);
 
 // Returns the result of the last temperature conversion on the given bus.
-signed short DT_GetLastTemp(byte bus);
+fixed16 DT_GetLastTemp(byte bus);
