@@ -1,6 +1,7 @@
 /* Dallas/Maxim DS18B20 1-Wire temperature sensor interface.
 
 	Requires onewire.c, which requires onewire-const.h.
+	Requires crc_8bit.c (and .h) to do CRC checking.
 	
 	Be sure to use an internal or external pullup on the 1-Wire bus pin.
 	
@@ -11,17 +12,22 @@
 	Bus number can be either 0 or 1.
 	
 	Only a single sensor is supported on each bus at the moment -
-	that is, reading is done in "SKIP ROM" (global reply) mode.	
+	that is, reading is done in "SKIP ROM" (global reply) mode.
 */
 
 #include "types-tjw.h"
 #include "fixed16.h"
+
 
 #define DT_MIN_TEMP  -55
 #define DT_MAX_TEMP  125
 
 // This is returned for the first temperature reading.
 #define DT_POWERUP_TEMP  85
+
+// This is returned when there was an error reading the temperature.
+#define DT_BAD_TEMPERATURE  ((short) 0xFFFF)
+
 
 // Returns the number of sensors connected to the specified bus.
 unsigned char DT_CountSensors(byte bus);

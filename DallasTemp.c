@@ -1,5 +1,6 @@
 #include <system.h>
 
+#include "crc_8bit.h"
 #include "onewire.h"
 #include "types-tjw.h"
 
@@ -165,10 +166,12 @@ fixed16 DT_GetLastTemp(byte bus)
 {
 	// Read the temperature value.
 	if (!OWB_Reset(bus))
-		return 0;
+		return DT_BAD_TEMPERATURE;
 
 	unsigned char lsb;
 	signed char msb;
+		
+	byte i;
 
 	if (bus) {	
 		OW_SendByte_2(OW_SkipROM);
@@ -176,21 +179,85 @@ fixed16 DT_GetLastTemp(byte bus)
 		
 		lsb = OW_ReadByte_2();
 		msb = OW_ReadByte_2();
+		
+	// Check CRC.
+		
+		// Start with what we've already read.
+		crc8Init();
+		crc8(lsb);
+		crc8(msb);
+	
+		// Read and include the next 6 bytes.
+		
+		#ifdef TEMP_DIAGS
+			// @2-3 = user byte, doesn't matter
+			crc8(OW_ReadByte_2());
+			crc8(OW_ReadByte_2());
+			
+			// @4 = Configuration, should be 0x7F.
+			i = OW_ReadByte_2();
+			crc8(i);
+			
+			if (i != 0x7F)
+				return 0x0A00;  // = 50 F
+			
+			// @5 = Reserved (0xFF)
+			i = OW_ReadByte_2();
+			crc8(i);
+			
+			if (i != 0xFF)
+				return 0x0480;  // = 40 F
+			
+			// @6 = Reserved (0xOC, but apparently varies)
+			i = OW_ReadByte_2();
+			crc8(i);
+			
+			// @7 = Reserved (0x10)
+			i = OW_ReadByte_2();
+			crc8(i);
+			
+			if (i != 0x10)
+				return 0x0CC;  // = 55 F
+		#else
+			for (i = 6; i > 0; i--)
+				crc8(OW_ReadByte_2());
+		#endif
+			
+		// Byte @8 is the CRC itself.
+		if (OW_ReadByte_2() != crc)
+			// Didn't pass the test.
+			#ifdef TEMP_DIAGS
+				return 0x2300;  // = 95 F
+			#else
+				return DT_BAD_TEMPERATURE;
+			#endif
 	} else {
 		OW_SendByte(OW_SkipROM);
 		OW_SendByte(DT_ReadScratchPad);
 		
 		lsb = OW_ReadByte();
 		msb = OW_ReadByte();
+
+	// Check CRC.
+		
+		// Start with what we've already read.
+		crc8Init();
+		crc8(lsb);
+		crc8(msb);
+	
+		// Read and include the next 6 bytes.
+		for (i = 6; i > 0; i--)
+			crc8(OW_ReadByte());
+			
+		// Byte @8 is the CRC itself.
+		if (OW_ReadByte() != crc)
+			// Didn't pass the test.
+			return DT_BAD_TEMPERATURE;
 	}
 		
 	// Adjust to a sane representation.
 	fixed16 result = makeFixed(msb, lsb);
 	result <<= 4;
-	
-	// That's all we need, but it's going to keep sending the rest of its memory.
-	// We'd be bored by that, so reset the bus.
-	OWB_Reset(bus);
 	
 	return result;
 }
