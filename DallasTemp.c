@@ -171,9 +171,10 @@ fixed16 DT_GetLastTemp(byte bus)
 	unsigned char lsb;
 	signed char msb;
 		
-	byte i;
+	byte b;
 
-	if (bus) {	
+	if (bus) {
+		// Bus #2.
 		OW_SendByte_2(OW_SkipROM);
 		OW_SendByte_2(DT_ReadScratchPad);
 		
@@ -194,33 +195,43 @@ fixed16 DT_GetLastTemp(byte bus)
 			crc8(OW_ReadByte_2());
 			crc8(OW_ReadByte_2());
 			
-			// @4 = Configuration, should be 0x7F.
-			i = OW_ReadByte_2();
-			crc8(i);
+			// @4 = Configuration, 0x1F bits should be on.
+			b = OW_ReadByte_2();
+			crc8(b);
 			
-			if (i != 0x7F)
+			if ((b & 0x1F) != 0x1F)
 				return 0x0A00;  // = 50 F
 			
 			// @5 = Reserved (0xFF)
-			i = OW_ReadByte_2();
-			crc8(i);
+			b = OW_ReadByte_2();
+			crc8(b);
 			
-			if (i != 0xFF)
+			if (b != 0xFF)
 				return 0x0480;  // = 40 F
 			
 			// @6 = Reserved (0xOC, but apparently varies)
-			i = OW_ReadByte_2();
-			crc8(i);
+			b = OW_ReadByte_2();
+			crc8(b);
 			
 			// @7 = Reserved (0x10)
-			i = OW_ReadByte_2();
-			crc8(i);
+			b = OW_ReadByte_2();
+			crc8(b);
 			
-			if (i != 0x10)
+			if (b != 0x10)
 				return 0x0CC;  // = 55 F
 		#else
-			for (i = 6; i > 0; i--)
-				crc8(OW_ReadByte_2());
+			crc8(OW_ReadByte_2());
+			crc8(OW_ReadByte_2());
+
+			// @4 = Configuration, 0x1F bits should be on.
+			b = OW_ReadByte_2();
+			if ((b & 0x1F) != 0x1F)
+				return DT_BAD_TEMPERATURE;
+			crc8(b);
+
+			crc8(OW_ReadByte_2());
+			crc8(OW_ReadByte_2());
+			crc8(OW_ReadByte_2());
 		#endif
 			
 		// Byte @8 is the CRC itself.
@@ -232,6 +243,7 @@ fixed16 DT_GetLastTemp(byte bus)
 				return DT_BAD_TEMPERATURE;
 			#endif
 	} else {
+		// Bus #1.
 		OW_SendByte(OW_SkipROM);
 		OW_SendByte(DT_ReadScratchPad);
 		
@@ -245,9 +257,18 @@ fixed16 DT_GetLastTemp(byte bus)
 		crc8(lsb);
 		crc8(msb);
 	
-		// Read and include the next 6 bytes.
-		for (i = 6; i > 0; i--)
-			crc8(OW_ReadByte());
+		crc8(OW_ReadByte());
+		crc8(OW_ReadByte());
+
+		// @4 = Configuration, 0x1F bits should be on.
+		b = OW_ReadByte();
+		if ((b & 0x1F) != 0x1F)
+			return DT_BAD_TEMPERATURE;
+		crc8(b);
+
+		crc8(OW_ReadByte());
+		crc8(OW_ReadByte());
+		crc8(OW_ReadByte());
 			
 		// Byte @8 is the CRC itself.
 		if (OW_ReadByte() != crc)
