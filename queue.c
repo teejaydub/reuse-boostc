@@ -16,18 +16,24 @@ byte QueueIncrement(byte queueIndex)
 
 void PrePushQueue(void)
 {
-	if (IsQueueFull())
+	if (IsQueueFull()) {
 		queueHead = QueueNextHead();
+		--queueCount;
+	}
 }
 
 void PrePushQueueKeepHead(void)
 {
-	if (IsQueueFull())
+	if (IsQueueFull()) {
 		queueTail = QueueNextHead();
+		queueCount = 1;
+	}
 }
 
 void ClearQueueTail(void)
 {
-	if (!IsQueueEmpty())
+	if (!IsQueueEmpty()) {
 		queueTail = QueueNextHead();
+		queueCount = 1;
+	}
 }
