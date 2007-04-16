@@ -55,29 +55,25 @@ QUEUE_EXTERN QueueEntry queue[QUEUE_LENGTH];
 // in which case it points to the head.
 QUEUE_EXTERN byte queueHead, queueTail, queueCount;
 
+// Returns the index of the next queue element after the given one,
+// wrapping around.
+byte QueueIncrement(byte queueIndex);
+
 inline void ClearQueue(void)
 {
-	queueHead = queueTail = queueCount = 0;
+	queueHead = 0;
+	queueTail = 0;
+	queueCount = 0;
 }
 
 // Clears everything from the queue but the head.
 // Does nothing if the queue is already empty.
 void ClearQueueTail(void);
 
-inline byte IsQueueEmpty(void)
-{
-	return queueCount == 0;
-}
+// These would be nice to kee
+#define IsQueueEmpty()  queueCount == 0
 
-inline byte IsQueueFull(void)
-{
-	return queueCount == QUEUE_LENGTH;
-}
-
-inline byte QueueIncrement(byte queueIndex)
-{
-	return (queueIndex + 1) % QUEUE_LENGTH;
-}
+#define IsQueueFull()  queueCount == QUEUE_LENGTH
 
 inline QueueEntry* QueueHead()
 {

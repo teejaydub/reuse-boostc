@@ -6,6 +6,14 @@
 
 #include "queue.h"
 
+byte QueueIncrement(byte queueIndex)
+{
+	if (queueIndex == QUEUE_LENGTH - 1)
+		return 0;
+	else
+		return queueIndex + 1;
+}
+
 void PrePushQueue(void)
 {
 	if (IsQueueFull())
