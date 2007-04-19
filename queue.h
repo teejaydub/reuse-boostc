@@ -53,16 +53,17 @@ QUEUE_EXTERN QueueEntry queue[QUEUE_LENGTH];
 // The tail index stored is one past the last element.
 // So, it points to the next "free" element, unless the queue is full,
 // in which case it points to the head.
-QUEUE_EXTERN byte queueHead, queueTail, queueCount;
+QUEUE_EXTERN QueueEntry* queueHead, * queueTail;
+QUEUE_EXTERN byte queueCount;
 
-// Returns the index of the next queue element after the given one,
+// Returns a pointer to the next queue element after the given one,
 // wrapping around.
-byte QueueIncrement(byte queueIndex);
+QueueEntry* QueueIncrement(QueueEntry* queueIndex);
 
 inline void ClearQueue(void)
 {
-	queueHead = 0;
-	queueTail = 0;
+	queueHead = &queue[0];
+	queueTail = queueHead;
 	queueCount = 0;
 }
 
@@ -77,20 +78,20 @@ void ClearQueueTail(void);
 
 inline QueueEntry* QueueHead()
 {
-	return &queue[queueHead];
+	return queueHead;
 }
 
 inline QueueEntry* QueueTail()
 {
-	return &queue[queueTail];
+	return queueTail;
 }
 
-inline byte QueueNextHead(void)
+inline QueueEntry* QueueNextHead(void)
 {
 	return QueueIncrement(queueHead);
 }
 
-inline byte QueueNextTail(void)
+inline QueueEntry* QueueNextTail(void)
 {
 	return QueueIncrement(queueTail);
 }

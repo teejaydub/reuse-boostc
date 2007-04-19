@@ -6,12 +6,12 @@
 
 #include "queue.h"
 
-byte QueueIncrement(byte queueIndex)
+QueueEntry* QueueIncrement(QueueEntry* queueIndex)
 {
-	if (queueIndex == QUEUE_LENGTH - 1)
-		return 0;
+	if (queueIndex == &queue[QUEUE_LENGTH - 1])
+		return &queue;
 	else
-		return queueIndex + 1;
+		return ++queueIndex;
 }
 
 void PrePushQueue(void)
