@@ -27,6 +27,6 @@ inline void DisablePeripherals(void)
 	#endif
 	
 	#if defined(_PIC18F2620)
-		adcon1 = 7;  // digital inputs
+		adcon1 = 0x0F;  // all digital inputs
 	#endif
 }
