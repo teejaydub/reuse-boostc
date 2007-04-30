@@ -25,4 +25,7 @@ inline void DisablePeripherals(void)
 		// Disable A/D.
 		ansel = 0;
 	#endif
+	
+	#if defined(_PIC18F2620)
+	#endif
 }
