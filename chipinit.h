@@ -16,7 +16,7 @@
 //  A/D converters
 inline void DisablePeripherals(void)
 {
-	#if defined(_PIC12F629) || defined(_PIC12F675)
+	#if defined(_PIC12F629) || defined(_PIC12F675) || defined(_PIC18F2620)
 		// Disable comparators.
 		cmcon = 7;
 	#endif
@@ -27,5 +27,6 @@ inline void DisablePeripherals(void)
 	#endif
 	
 	#if defined(_PIC18F2620)
+		adcon1 = 7;  // digital inputs
 	#endif
 }
