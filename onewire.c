@@ -128,6 +128,13 @@ byte OW_ReadBit()
 			addlw 255  // C = 1 iff the next input bit = 1
 			rrf _result, F
 		}
+#elif OW_MASK == 0x04
+		asm { 
+			movf _ow_port, W
+			andlw 0x04  // OW_MASK
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
+		}
 #elif OW_MASK == 0x08
 		asm { 
 			movf _ow_port, W
@@ -143,7 +150,7 @@ byte OW_ReadBit()
 			rrf _result, F
 		}
 #else
- #error Have to hard-code the pin constant here, unfortunately.
+ #error "Have to hard-code the pin constant here, unfortunately."
 #endif
 		
 		// Total time must be > 61 us.
@@ -194,6 +201,13 @@ unsigned char OW_ReadByte()
 			addlw 255  // C = 1 iff the next input bit = 1
 			rrf _result, F
 		}
+#elif OW_MASK == 0x04
+		asm { 
+			movf _ow_port, W
+			andlw 0x04  // OW_MASK
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
+		}
 #elif OW_MASK == 0x08
 		asm { 
 			movf _ow_port, W
@@ -209,7 +223,7 @@ unsigned char OW_ReadByte()
 			rrf _result, F
 		}
 #else
- #error Have to hard-code the pin constant here, unfortunately.
+ #error "Have to hard-code the pin constant here, unfortunately."
 #endif
 		
 		// Total time must be > 61 us.
@@ -355,6 +369,13 @@ byte OW_ReadBit_2()
 			addlw 255  // C = 1 iff the next input bit = 1
 			rrf _result, F
 		}
+#elif OW_MASK_2 == 0x08
+		asm { 
+			movf _ow_port, W
+			andlw 0x08  // OW_MASK_2
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
+		}
 #elif OW_MASK_2 == 0x10
 		asm { 
 			movf _ow_port, W
@@ -363,7 +384,7 @@ byte OW_ReadBit_2()
 			rrf _result, F
 		}
 #else
- #error Have to hard-code the pin constant here, unfortunately.
+ #error "Have to hard-code the pin constant here, unfortunately."
 #endif
 		
 		// Total time must be > 61 us.
@@ -421,6 +442,13 @@ unsigned char OW_ReadByte_2()
 			addlw 255  // C = 1 iff the next input bit = 1
 			rrf _result, F
 		}
+#elif OW_MASK_2 == 0x08
+		asm { 
+			movf _ow_port, W
+			andlw 0x08  // OW_MASK_2
+			addlw 255  // C = 1 iff the next input bit = 1
+			rrf _result, F
+		}
 #elif OW_MASK_2 == 0x10
 		asm { 
 			movf _ow_port, W
@@ -429,7 +457,7 @@ unsigned char OW_ReadByte_2()
 			rrf _result, F
 		}
 #else
- #error Have to hard-code the pin constant here, unfortunately.
+ #error "Have to hard-code the pin constant here, unfortunately."
 #endif
 		
 		// Total time must be > 61 us.
