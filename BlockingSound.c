@@ -13,7 +13,6 @@ void PlaySound(unsigned short periodUs, unsigned short durationMs)
 	
 	// Think in terms of half-period, not periods.
 	periodUs >>= 1;
-	durationMs <<= 1;
 	
 	// Cut the period into two byte values we can pass to the standard delay functions.
 	byte periodm = periodUs / 1000;
@@ -45,6 +44,9 @@ void PlaySound(unsigned short periodUs, unsigned short durationMs)
 			usPlayed -= 1000;
 			++msPlayed;
 		}
+		
+		// Feed the watchdog.
+		clear_wdt();
 	}		
 	
 	intcon.GIE = 1;
@@ -59,4 +61,152 @@ void PlayClick(void)
 	//SOUND_LATCH ^= SOUND_MASK;
 	
 	PlaySound(1000, 2);
+}
+
+#define NUM_NOTES  24
+unsigned short notePeriods[NUM_NOTES] = {
+	3823,
+	3608,
+	3405,
+	3214,
+	3034,
+	2864,
+	2703,
+	2551,
+	2408,
+	2273,
+	2241,
+	2025,
+	1911,
+	1804,
+	1703,
+	1607,
+	1517,
+	1432,
+	1351,
+	1276,
+	1204,
+	1136,
+	1073,
+	1066
+};
+
+// Given one of the note length codes,
+// return the total time alloted to that note length,
+// at a standard tempo (150 bpm), in milliseconds.
+inline unsigned short TimeFor(char noteLengthCode)
+{
+	switch (noteLengthCode) {
+	case '1':
+		return 1600;
+	case '2':
+		return 800;
+	case '4':
+		return 400;
+	case '8':
+		return 200;
+	case '6':
+		return 100;
+	default:
+		return 0;
+	}
+}
+
+void PlaySong(const char* song)
+{
+	unsigned short noteTimeMs = TimeFor('8');
+	unsigned short noteDurationMs = noteTimeMs * 4 / 5;
+	
+	// This is a modifier added to the next note.
+	char note = 0;
+	byte playNote = false;
+	
+	for (; *song; ++song) {
+		switch (*song) {
+		case '1':
+		case '2':
+		case '4':
+		case '8':
+		case '6':
+			noteTimeMs = TimeFor(*song);
+			noteDurationMs = noteTimeMs * 4 / 5;
+			break;
+			
+		case '+':
+			++note;
+			break;
+		
+		case '-':
+			--note;
+			break;
+			
+		case 'c':
+			playNote = true;
+			break;
+		case 'd':
+			note += 2;
+			playNote = true;
+			break;
+		case 'e':
+			note += 4;
+			playNote = true;
+			break;
+		case 'f':
+			note += 5;
+			playNote = true;
+			break;
+		case 'g':
+			note += 7;
+			playNote = true;
+			break;
+		case 'a':
+			note += 9;
+			playNote = true;
+			break;
+		case 'b':
+			note += 11;
+			playNote = true;
+			break;
+		case 'C':
+			note += 12;
+			playNote = true;
+			break;
+		case 'D':
+			note += 14;
+			playNote = true;
+			break;
+		case 'E':
+			note += 16;
+			playNote = true;
+			break;
+		case 'F':
+			note += 17;
+			playNote = true;
+			break;
+		case 'G':
+			note += 19;
+			playNote = true;
+			break;
+		case 'A':
+			note += 21;
+			playNote = true;
+			break;
+		case 'B':
+			note += 23;
+			playNote = true;
+			break;
+		}
+	
+		if (playNote) {
+			if (note < NUM_NOTES) {
+				unsigned short notePeriod = notePeriods[note];
+			
+				PlaySound(notePeriod, noteDurationMs);
+				delay_ms(noteTimeMs - noteDurationMs);
+			}
+			
+			note = 0;
+			playNote = false;
+		}
+	}
 }

@@ -19,4 +19,15 @@ void PlaySound(unsigned short periodUs, unsigned short durationMs);
 // Makes a short click.
 void PlayClick(void);
 
+// Plays a song written out in a string of note names.
+// Plain letters signify diatonic (C major) notes over two octaves,
+// lowercase for the lower octave (c-b) and uppercase for the upper octave (C-B).
+// E.g., an ascending scale is "cdefgabC".
+// The default duration is an eighth note at 120 bpm.
+// Duration is changed for subsequent notes using '8', '4', '2', and '1'
+// for eighth, quarter, half, and whole notes (4/4), or '6' for sixteenths.
+// Accidentals can be prefixed as '+' for sharp and '-' for flat,
+// and affect only the following note.
+void PlaySong(const char* song);
+
 #endif
