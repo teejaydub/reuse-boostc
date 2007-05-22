@@ -21,9 +21,12 @@ void PlaySound(unsigned short periodUs, unsigned short durationMs)
 	
 	intcon.GIE = 0;
 	
+	// Loop playing single cycles until we've done the required duration.
+	// But, round to the nearest zero-going half-cycle, so we can leave the pin low.
+	// (May save on power in certain circumstances?)
 	unsigned short usPlayed = 0;
 	unsigned short msPlayed = 0;
-	while (msPlayed < durationMs) {
+	while (msPlayed < durationMs || SOUND_LATCH.SOUND_PIN) {
 		// Play for one period.
 		
 		// Toggle the sound pin.
