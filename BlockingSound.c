@@ -40,7 +40,7 @@ void PlaySound(unsigned short periodUs, unsigned short durationMs)
 		// Accumulate the total time.
 		usPlayed += periodUs;
 		
-		if (usPlayed > 1000) {
+		while (usPlayed > 1000) {
 			usPlayed -= 1000;
 			++msPlayed;
 		}
