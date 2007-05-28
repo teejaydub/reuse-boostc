@@ -107,6 +107,8 @@ inline unsigned short TimeFor(char noteLengthCode)
 		return 200;
 	case '6':
 		return 100;
+	case '3':
+		return 50;
 	default:
 		return 0;
 	}
@@ -125,6 +127,7 @@ void PlaySong(const char* song)
 		switch (*song) {
 		case '1':
 		case '2':
+		case '3':
 		case '4':
 		case '8':
 		case '6':
