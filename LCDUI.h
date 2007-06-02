@@ -13,6 +13,9 @@
 // The code points, defined as character constants:
 #define OK_CHAR  '\001'
 #define ELLIPSIS_CHAR  '\002'
+// And as string constants, for concatenating with other strings:
+#define OK_STR  "\001"
+#define ELLIPSIS_STR  "\002"
 
 
 // Initializes the module.
