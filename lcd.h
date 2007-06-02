@@ -97,16 +97,31 @@
 
 ////////////////////////////////////////////////////////////////////////////
 
-// TJW - standardized on putting constants here.
+// Section added by TJW to facilitate use by multiple modules.
+
+// Standardized on putting constants here.
 #include "lcd_consts.h"
 
-// TJW - changed this section to be accessible in a companion C module like normal C,
+// Changed this section to be accessible in a companion C module like normal C,
 // so this module can be used in real-world multi-module projects.
 #ifdef IN_LCD
 char writeDelayType;
 #else
 extern char writeDelayType;
 #endif
+
+// Added these convenience functions and defines.
+
+// Additional commands.
+#define set_cg_ram				0x40 // First charcter - add the character offset, 0-7.
+
+// Defines a custom character at code point c, with data in s.
+// Works specifically for 5x7 characters.
+// c must be in the range 0-7.
+// s must be 7 bytes long.
+// See http://www.quinapalus.com/hd44780udg.html for a good way to generate the data.
+void lcd_set_char(unsigned char c, rom char* s);
+
 
 ////////////////////////////////////////////////////////////////////////////
 // LCD Commands ( Refer to LCD Data Sheet )

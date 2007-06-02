@@ -6,6 +6,15 @@
 #include "LCDMenu.h"
 #include "LCDMenuConsts.h"
 
+rom char* okChar = {0x1c,0x14,0x1c,0x0,0x5,0x6,0x5};
+rom char* ellipsisChar = {0x0,0x0,0x0,0x0,0x0,0x0,0x15};
+
+
+void DefineLMCustomChars(void)
+{
+	lcd_set_char(OK_CHAR, okChar);
+	lcd_set_char(ELLIPSIS_CHAR, ellipsisChar);
+}
 
 /* Displays menus like this:
 

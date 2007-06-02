@@ -8,6 +8,16 @@
 
 #include "types-tjw.h"
 
+
+// Some custom characters defined here.
+// The code points, defined as character constants:
+#define OK_CHAR  '\001'
+#define ELLIPSIS_CHAR  '\002'
+
+// Call this to define them, if used elsewhere.
+void DefineLMCustomChars(void);
+
+
 // Clears the display and presents a menu of options.
 // menuItems looks like:
 //   [title:]item1[|item2[|item3...]]]
