@@ -84,24 +84,28 @@ byte GetMenuChoice(rom char* menuItems)
 	// Analyze the input.
 	byte i;
 	byte titleLength = 0;  // Nonzero iff there's a title.
-	byte maxItemIndex = 0;
+	byte numItems = 0;
 	for (i = 0; menuItems[i]; i++) {
 		switch (menuItems[i]) {
 		case ':':
 			// Note the length of the title.
 			titleLength = i + 1;
-			maxItemIndex = 0;
+			if (menuItems[i + 1] != '\0')
+				numItems = 1;
+			else
+				numItems = 0;
 			break;
 			
 		case '|':
 			// Count the items.
-			++maxItemIndex;
+			if (menuItems[i + 1])
+				++numItems;
 			break;
 		}
 	}
 	
 	// Abort if there were no items.
-	if (maxItemIndex == 0)
+	if (numItems == 0)
 		return 0;
 	
 	// Clear the screen.
@@ -152,13 +156,13 @@ byte GetMenuChoice(rom char* menuItems)
 		switch (kb_getc()) {
 		case LEFT_KEY:
 			if (currentChoice == 0)
-				currentChoice = maxItemIndex;
+				currentChoice = numItems - 1;
 			else
 				--currentChoice;
 			break;
 		
 		case RIGHT_KEY:
-			if (currentChoice == maxItemIndex)
+			if (currentChoice == numItems - 1)
 				currentChoice = 0;
 			else
 				++currentChoice;
