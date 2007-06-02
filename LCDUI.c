@@ -1,19 +1,69 @@
-// LCDMenu.c
+// LCDUI.c
 
 #include <system.h>
+#include <string.h>
 
 #include "lcd.h"
-#include "LCDMenu.h"
-#include "LCDMenuConsts.h"
+#include "LCDUI.h"
+#include "LCDUIConsts.h"
 
 rom char* okChar = {0x1c,0x14,0x1c,0x0,0x5,0x6,0x5};
 rom char* ellipsisChar = {0x0,0x0,0x0,0x0,0x0,0x0,0x15};
 
 
-void DefineLMCustomChars(void)
+void InitLCDUI(void)
 {
+	lcd_setup();
+
 	lcd_set_char(OK_CHAR, okChar);
 	lcd_set_char(ELLIPSIS_CHAR, ellipsisChar);
+}
+
+// Prompts for, and wait for, the user to press Select to continue.
+void ConfirmMessage(void)
+{
+	// Show the prompt character.
+	lcd_gotoxy(DISPLAY_WIDTH - 1, 0);
+	lcd_datamode();
+	lcd_write(OK_CHAR);
+	
+	lcd_gotoxy(DISPLAY_WIDTH - 1, 0);
+
+	// Wait.
+	char c;
+	do 
+		c = kb_getc();
+	while (c != ENTER_KEY);
+}
+
+void PrintCentered(const char* msg, byte field)
+{
+	byte leftPad = (field - strlen(msg)) / 2;
+	
+	lcd_datamode();
+	
+	byte i;
+	for (i = 0; i < leftPad; i++)
+		lcd_write(' ');
+		
+	lprintf(msg);
+	
+	i += strlen(msg);
+	
+	while (i++ < field)
+		lcd_write(' ');
+}
+
+void DialogBox(const char* msg1, const char* msg2)
+{
+	lcd_clear();
+	
+	PrintCentered(msg1, DISPLAY_WIDTH);
+	
+	lcd_gotoxy(0, 1);
+	PrintCentered(msg2, DISPLAY_WIDTH);
+	
+	ConfirmMessage();
 }
 
 /* Displays menus like this:
