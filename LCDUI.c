@@ -19,13 +19,23 @@ void InitLCDUI(void)
 	lcd_set_char(ELLIPSIS_CHAR, ellipsisChar);
 }
 
+void HighlightStatusChar(void)
+{
+	lcd_gotoxy(DISPLAY_WIDTH - 1, 0);
+}
+
+void ShowStatusChar(char c)
+{
+	HighlightStatusChar();
+	lcd_datamode();
+	lcd_write(c);
+}
+
 // Prompts for, and wait for, the user to press Select to continue.
 void ConfirmMessage(void)
 {
 	// Show the prompt character.
-	lcd_gotoxy(DISPLAY_WIDTH - 1, 0);
-	lcd_datamode();
-	lcd_write(OK_CHAR);
+	ShowStatusChar(OK_CHAR);
 	
 	lcd_gotoxy(DISPLAY_WIDTH - 1, 0);
 

@@ -24,6 +24,12 @@
 void InitLCDUI(void);
 
 
+// Shows the specified character in the "status spot" (upper right).
+void ShowStatusChar(char c);
+
+// Put the cursor on the "status spot."
+void HighlightStatusChar(void);
+
 // Puts "OK" in the upper right corner, puts the cursor on it,
 // and waits for the user to press Enter.
 void ConfirmMessage(void);
