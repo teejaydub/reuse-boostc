@@ -26,7 +26,8 @@
 #define DT_POWERUP_TEMP  85
 
 // This is returned when there was an error reading the temperature.
-#define DT_BAD_TEMPERATURE  ((short) 0xFFFF)
+// It's not a value the sensor is supposed to ever return.
+#define DT_BAD_TEMPERATURE  ((short) 0x6400)
 
 
 // Returns the number of sensors connected to the specified bus.
