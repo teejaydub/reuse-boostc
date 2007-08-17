@@ -8,7 +8,7 @@
 #ifndef __FIXED16_H
 #define __FIXED16_H
 
-typedef short fixed16;
+typedef signed short fixed16;
 
 // Returns b converted to fixed-point, with no fractional part.
 inline fixed16 fixedFromByte(char b)
