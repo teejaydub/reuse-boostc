@@ -21,10 +21,39 @@ inline fixed16 makeFixed(char integral, char fractional)
 	return (((fixed16) integral) << 8) | ((fixed16) fractional);
 }
 
-// Returns the integral part of f.
-inline char fixedIntegral(fixed16 f)
+// Returns the integral part of f in i.
+inline void fixedIntegral(fixed16 f, signed char& i)
 {
-	return f >> 8;
+	HIBYTE(i, f);
+}
+
+// Returns the fractional part of f times 256.
+inline fixedFracTo(fixed16 f, unsigned char& frac)
+{
+	LOBYTE(frac, f);
+}
+
+// Returns the tenths digit of the fractional part of f.
+// I.e., if f = 1.2, returns 2.
+inline unsigned char fixedTenths(fixed16 f)
+{
+	// Start out with 1/256ths.
+	unsigned char tempFixed;
+	fixedFracTo(f, tempFixed);
+	
+	// Convert to 1/16ths.
+	tempFixed >>= 4;
+	
+	// Convert to 1/160ths.
+	tempFixed *= 10;
+	
+	// Add 0.05 = 1/20 = 8/160 so we round to the nearest tenth.
+	tempFixed += 8;
+	
+	// Convert to 1/10ths.
+	tempFixed >>= 4;
+	
+	return tempFixed;
 }
 
 // Returns f truncated to an integer.
