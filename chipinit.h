@@ -7,26 +7,42 @@
 	and because this code is typically only used once, so inline doesn't cost anything.
 	
 	As I use new chips, I'll add chip-specific sections.
+	
+	Chips supported:
+	
+	PIC12F629
+	PIC12F675
+	PIC16F916
+	PIC18F2620
 */
 
-#include <system.h>
 
 // Disables all optional peripherals, including:
 //  Comparators
 //  A/D converters
+//  LCD driver
 inline void DisablePeripherals(void)
 {
+	// Disable comparators.
 	#if defined(_PIC12F629) || defined(_PIC12F675) || defined(_PIC18F2620)
-		// Disable comparators.
 		cmcon = 7;
 	#endif
 	
-	#if defined(_PIC12F675)
-		// Disable A/D.
+	#if defined(_PIC16F916)
+		cmcon0 = 7;
+	#endif
+	
+	// Disable A/D.
+	#if defined(_PIC12F675) || defined(_PIC16F916)
 		ansel = 0;
 	#endif
 	
 	#if defined(_PIC18F2620)
 		adcon1 = 0x0F;  // all digital inputs
+	#endif
+	
+	// Disable LCD driver.
+	#if defined(_PIC16F916)
+		lcdcon.VLCDEN = 0;
 	#endif
 }
