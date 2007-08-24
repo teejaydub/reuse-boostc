@@ -28,11 +28,10 @@ unsigned char UiTimeInterrupt(void)
 		// Clear the interrupt.
 		intcon.T0IF = 0;
 
-		if (++tickScaler == 0) {
+		if (++tickScaler == 0)
 			ticks++;
-			return true;
-		}
-	}
-	
-	return false;
+
+		return true;
+	} else
+		return false;
 }
