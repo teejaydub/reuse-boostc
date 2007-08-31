@@ -4,8 +4,11 @@
 // Chips that can read and write their program ROM call it 'EEARDL' instead of 'EEADR'.
 // Compensate.
 #ifdef EEADRL
-volatile char eeadr@EEADRL;
-volatile char eedata@EEDATL;
+ // (If the header doesn't compensate already.)
+ #ifndef EEADR
+  volatile char eeadr@EEADRL;
+  volatile char eedata@EEDATL;
+ #endif
 #endif
 
 char read_eeprom(char addr)
