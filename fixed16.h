@@ -22,13 +22,13 @@ inline fixed16 makeFixed(char integral, char fractional)
 }
 
 // Returns the integral part of f in i.
-inline void fixedIntegral(fixed16 f, signed char& i)
+inline void fixedIntegralTo(fixed16 f, signed char& i)
 {
 	HIBYTE(i, f);
 }
 
 // Returns the fractional part of f times 256.
-inline fixedFracTo(fixed16 f, unsigned char& frac)
+inline void fixedFracTo(fixed16 f, unsigned char& frac)
 {
 	LOBYTE(frac, f);
 }

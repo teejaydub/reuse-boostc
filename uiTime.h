@@ -1,7 +1,7 @@
 // uiTime.h
 //
 // Simple, human-level timekeeping for user interface purposes.
-// Resolution is milliseconds and seconds; accuracy is low.
+// Resolution is milliseconds and seconds under a minute; accuracy is low.
 
 #ifndef __UITIME_H
 #define __UITIME_H
@@ -21,12 +21,13 @@
 // Always use the difference between the current value of ticks and some previously-stored value;
 // that way, you never have to worry about when it rolls over.
 //
-// Only change this value if you're sure it won't be used elsewhere in your app.
+// Only change this value if it's only used to mean one thing in your app.
 // If you only need one UI timer, you can save one byte of RAM that way (FWTW).
 UITIME_EXTERN unsigned char ticks;
 
 // Express your desired timeouts and delay factors in terms of this.
 #define TICKS_PER_SEC  4
+#define LOG2_TICKS_PER_SEC  2
 
 
 // Initializes, and dedicates Timer 0 for use and maintenance by this module.
