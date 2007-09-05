@@ -18,7 +18,7 @@ unsigned char spareSecondTicks;
 void ClearUiSeconds(void)
 {
 	seconds = 0;
-	secondTicks = 0;
+	secondTicks = ticks;
 	spareSecondTicks = 0;
 }
 
