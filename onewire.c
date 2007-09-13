@@ -36,7 +36,6 @@ char OW_Reset()
 	delay_10us(7);
 	
 	// Test the result.
-	status.RP0 = 0;  // seems to be needed?!
 	char result = ow_port.OW_PIN == 0;
 	
 	// Interrupts are OK now.
@@ -270,7 +269,6 @@ char OW_Reset_2()
 	delay_10us(7);
 	
 	// Test the result.
-	status.RP0 = 0;  // seems to be needed?!
 	char result = ow_port.OW_PIN_2 == 0;
 	
 	// Interrupts are OK now.
