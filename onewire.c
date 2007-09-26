@@ -23,8 +23,7 @@ char OW_Reset()
 	// Low for T_RSTL >= 480 us.
 	OUTPUT_LOW;
 	
-	delay_10us(25);
-	delay_10us(25);
+	delay_10us(50);
 	
 	// Hi-Z.
 	OUTPUT_HIZ;
@@ -44,8 +43,9 @@ char OW_Reset()
 	// Allow it to complete for the remainder of T_RSTH = 480 us since Hi-Z.
 	// 480 - 60 = 420.
 	// The docs say 430, so use that.
-	delay_10us(20);
-	delay_10us(23);
+	delay_10us(43);
+	
+	OUTPUT_HIGH;
 	
 	return result;
 }
@@ -76,7 +76,7 @@ void OW_SendByte(unsigned char b)
 		delay_10us(6);
 		
 		// Recovery time >= 1 us.
-		OUTPUT_HIZ;
+		OUTPUT_HIGH;
 		
 		nop();
 		nop();
@@ -88,6 +88,8 @@ void OW_SendByte(unsigned char b)
 	
 	// Restore interrupts.
 	intcon.GIE = 1;
+	
+	OUTPUT_HIGH;
 }
 
 byte OW_ReadBit()
@@ -157,6 +159,8 @@ byte OW_ReadBit()
 	
 	// Restore interrupts.
 	intcon.GIE = 1;
+	
+	OUTPUT_HIGH;
 	
 	return result;
 }
@@ -236,6 +240,8 @@ unsigned char OW_ReadByte()
 	// Restore interrupts.
 	intcon.GIE = 1;
 	
+	OUTPUT_HIGH;
+	
 	return result;
 }
 
@@ -280,6 +286,8 @@ char OW_Reset_2()
 	delay_10us(20);
 	delay_10us(23);
 	
+	OUTPUT_HIGH_2;
+
 	return result;
 }
 
@@ -309,7 +317,7 @@ void OW_SendByte_2(unsigned char b)
 		delay_10us(6);
 		
 		// Recovery time >= 1 us.
-		OUTPUT_HIZ_2;
+		OUTPUT_HIGH_2;
 		
 		nop();
 		nop();
@@ -321,6 +329,8 @@ void OW_SendByte_2(unsigned char b)
 	
 	// Restore interrupts.
 	intcon.GIE = 1;
+
+	OUTPUT_HIGH_2;
 }
 
 byte OW_ReadBit_2()
@@ -391,6 +401,8 @@ byte OW_ReadBit_2()
 	// Restore interrupts.
 	intcon.GIE = 1;
 	
+	OUTPUT_HIGH_2;
+
 	return result;
 }
 
@@ -469,6 +481,8 @@ unsigned char OW_ReadByte_2()
 	// Restore interrupts.
 	intcon.GIE = 1;
 	
+	OUTPUT_HIGH_2;
+
 	return result;
 }
 

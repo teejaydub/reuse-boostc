@@ -23,10 +23,12 @@
 #define DT_MAX_TEMP  125
 
 // This is returned for the first temperature reading.
+// It's in degrees C.
 #define DT_POWERUP_TEMP  85
 
 // This is returned when there was an error reading the temperature.
 // It's not a value the sensor is supposed to ever return.
+// It's in fixed-point degrees C.
 #define DT_BAD_TEMPERATURE  ((short) 0x6400)
 
 
