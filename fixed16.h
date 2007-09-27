@@ -16,7 +16,7 @@ inline fixed16 fixedFromByte(char b)
 	return ((fixed16) b) << 8;
 }
 
-inline fixed16 makeFixed(char integral, char fractional)
+inline fixed16 makeFixed(char integral, unsigned char fractional)
 {
 	return (((fixed16) integral) << 8) | ((fixed16) fractional);
 }
@@ -72,6 +72,12 @@ inline char fixedHasFrac(fixed16 f)
 inline char fixedRoundToByte(fixed16 f)
 {
 	return (char)((f + 0x0080) >> 8);
+}
+
+// Return 1/f.
+inline fixed16 fixedReciprocal(fixed16 f)
+{
+	return ((1 << 8) / f) << 8;
 }
 
 #endif
