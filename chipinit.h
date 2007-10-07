@@ -12,6 +12,7 @@
 	
 	PIC12F629
 	PIC12F675
+	PIC16F688
 	PIC16F916
 	PIC18F2620
 */
@@ -28,12 +29,12 @@ inline void DisablePeripherals(void)
 		cmcon = 7;
 	#endif
 	
-	#if defined(_PIC16F916)
+	#if defined(_PIC16F916) || defined(_PIC16F688)
 		cmcon0 = 7;
 	#endif
 	
 	// Disable A/D.
-	#if defined(_PIC12F675) || defined(_PIC16F916)
+	#if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688)
 		ansel = 0;
 	#endif
 	
