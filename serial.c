@@ -42,8 +42,8 @@
 	// Head == Tail when empty.
 	// (Tail + 1) mod n == Head when full.
 	unsigned char dataQueue[SERIAL_QUEUE_LENGTH];
-	unsigned char* queueHead;
-	unsigned char* queueTail;
+	unsigned char* dataQueueHead;
+	unsigned char* dataQueueTail;
 	unsigned char* queueNextTail;
 	const unsigned char* queueEnd = dataQueue + SERIAL_QUEUE_LENGTH;  // one past the end
 	
@@ -108,8 +108,8 @@ void InitializeSerial2(bool useReceive, bool useTransmit)
 		
 		intcon.PEIE = 1;
 		
-		queueHead = queueTail = dataQueue;
-		queueNextTail = queueTail + 1;
+		dataQueueHead = dataQueueTail = dataQueue;
+		queueNextTail = dataQueueTail + 1;
 	
 	#endif
 	}
@@ -217,13 +217,13 @@ void SerialInterrupt()
 				ser_errorType = 'C';
 				ser_error = 1;
 				ser_hasData = 0;
-			} else if (queueNextTail == queueHead) {  // queue is full
+			} else if (queueNextTail == dataQueueHead) {  // queue is full
 				ser_error = 1;
 				ser_errorType = 'c';
 			} else {
-				*queueTail = rcreg;
+				*dataQueueTail = rcreg;
 				
-				queueTail = queueNextTail;
+				dataQueueTail = queueNextTail;
 				
 				if (++queueNextTail == queueEnd)
 					queueNextTail = dataQueue;
@@ -244,13 +244,13 @@ unsigned char ReadSerial()
 	result = dataQueue;
 	ser_hasData = 0;
 #else
-	result = *queueHead;
+	result = *dataQueueHead;
 	
 	// Increment and handle rollover.
-	if (++queueHead == queueEnd)
-		queueHead = dataQueue;
+	if (++dataQueueHead == queueEnd)
+		dataQueueHead = dataQueue;
 		
-	ser_hasData = (queueHead != queueTail);
+	ser_hasData = (dataQueueHead != dataQueueTail);
 #endif
 	return result;
 }

@@ -17,8 +17,7 @@ QueueEntry* QueueIncrement(QueueEntry* queueIndex)
 void PrePushQueue(void)
 {
 	if (IsQueueFull()) {
-		queueHead = QueueNextHead();
-		--queueCount;
+		PopQueue();
 	}
 }
 

@@ -7,7 +7,7 @@
 	from queue-consts-template.h).
 	
 	Accordingly, only one queue can be used per application.
-	It's defined internal this module, and accessed only through this API.
+	It's defined internal to this module, and accessed only through this API.
 	But, this gives substantial efficiency over a queue whose elements are sized
 	at runtime, without any syntactic bloat.
 	
@@ -22,7 +22,7 @@
 	Sample code for adding items:
 	
 		PrePushQueue();
-		QueueHead()->b = 5;
+		QueueTail()->b = 5;
 		PushQueue();
 		
 	Sample code for accessing the head and removing it:
@@ -53,7 +53,10 @@ QUEUE_EXTERN QueueEntry queue[QUEUE_LENGTH];
 // The tail index stored is one past the last element.
 // So, it points to the next "free" element, unless the queue is full,
 // in which case it points to the head.
-QUEUE_EXTERN QueueEntry* queueHead, * queueTail;
+// It also points to the head when the queue is empty,
+// so we also keep a counter to distinguish between those two states.
+QUEUE_EXTERN QueueEntry* queueHead;
+QUEUE_EXTERN QueueEntry* queueTail;
 QUEUE_EXTERN byte queueCount;
 
 // Returns a pointer to the next queue element after the given one,
