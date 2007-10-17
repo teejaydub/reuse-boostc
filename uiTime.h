@@ -1,7 +1,11 @@
 // uiTime.h
 //
 // Simple, human-level timekeeping for user interface purposes.
-// Resolution is milliseconds and seconds under a minute; accuracy is low.
+// Resolution is milliseconds and seconds under a minute; 
+// accuracy is dependent on the driving method.
+//
+// Can be driven off of Timer 0 with most of the overhead handled here, 
+// or from a 60 Hz external signal.
 
 #ifndef __UITIME_H
 #define __UITIME_H
@@ -15,7 +19,7 @@
 
 // Count of ticks since startup.
 // A "tick" happens roughly four times per second.
-// Rolls over about every 67 seconds.
+// Rolls over about every 64 - 67 seconds.
 // Seems to be a convenient time unit for many UI-related short delays.
 //
 // Always use the difference between the current value of ticks and some previously-stored value;
@@ -33,13 +37,33 @@ void ResetUITimer(void);
 #define LOG2_TICKS_PER_SEC  2
 
 
+//====================================================================
+// Routines for using Timer 0 as the time source
+
 // Initializes, and dedicates Timer 0 for use and maintenance by this module.
 // Requires that GIE is enabled elsewhere, and that UiTimeInterrupt is called.
 void InitUiTime_Timer0(void);
 
-// Call this in your interrupt handler.
+// Call this in your interrupt handler if using Timer 0.
 // Returns true about once a millisecond, which can be used for other tasks.
+// E.g.:
+//
+//	void interrupt(void)
+//	{
+//		if (UiTimeInterrupt())
+//			CheckButtons();
+//	}
 unsigned char UiTimeInterrupt(void);
+
+
+//====================================================================
+// Routines for using an external 60 Hz time source
+
+// Call this once to initialize.
+void InitUiTime_60Hz(void);
+
+// Call this at 60 Hz to update.
+void UiTimeUpdate60(void);
 
 
 #endif
