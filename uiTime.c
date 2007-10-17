@@ -21,6 +21,12 @@ void InitUiTime_Timer0(void)
 	ticks = 0;
 }
 
+void ResetUITimer(void)
+{
+	tickScaler = 0;
+	ticks = 0;
+}
+
 unsigned char UiTimeInterrupt(void)
 {
 	// Timer 0, rolling over with a 1.024 ms period.

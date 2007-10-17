@@ -25,6 +25,9 @@
 // If you only need one UI timer, you can save one byte of RAM that way (FWTW).
 UITIME_EXTERN unsigned char ticks;
 
+// Resets the timer to 0.
+void ResetUITimer(void);
+
 // Express your desired timeouts and delay factors in terms of this.
 #define TICKS_PER_SEC  4
 #define LOG2_TICKS_PER_SEC  2
