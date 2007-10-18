@@ -50,7 +50,7 @@ void InitUiTime_60Hz(void)
 
 void UiTimeUpdate60(void)
 {
-	if (++tickScaler >= 12) {
+	if (++tickScaler >= 15) {
 		tickScaler = 0;
 		ticks++;
 	}
