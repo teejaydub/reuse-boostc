@@ -1,7 +1,7 @@
 // uiSeconds.h
 //
-// Simple timekeeping for user interface purposes.
-// Resolution is from one second to ; accuracy is low.
+// Simple timekeeping; accumulates uiTime's clock ticks into seconds.
+// Range is from one second to 2^16 seconds (~18 hours); accuracy is dependent on uiTime.
 // Requires uiTime.
 
 #ifndef __UISECONDS_H
