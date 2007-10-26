@@ -18,6 +18,12 @@
 #include "types-tjw.h"
 
 
+#define SECONDS_PER_MINUTE  60
+#define MINUTES_PER_HOUR  60
+#define HOURS_PER_DAY  24
+#define MINUTES_PER_DAY  (MINUTES_PER_HOUR * HOURS_PER_DAY)
+
+
 #ifdef IN_DAYTIME
  #define DAYTIME_EXTERN
 #else
@@ -43,6 +49,9 @@ void SetDayTime(byte hours, byte minutes);
 // This must be called frequently to update the time - at least once per minute.
 // It returns true if we've just crossed to a new day.
 byte UpdateDayTime(void);
+
+// Gets the current time, in a 24-hour clock, into the specified variables.
+void GetDayTime(byte& hours, byte& minutes);
 
 
 

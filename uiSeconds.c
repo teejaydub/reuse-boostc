@@ -4,15 +4,17 @@
 
 #include <system.h>
 
+#include "types-tjw.h"
+
 #include "uiSeconds.h"
 
 
 
 // Number of ticks since we last updated.  Don't modify outside this module.
-unsigned char secondTicks;
+unsigned char secondTicks = 0;
 
 // Extra ticks that we haven't yet factored in.
-unsigned char spareSecondTicks;
+unsigned char spareSecondTicks = 0;
 
 
 void ClearUiSeconds(void)
@@ -24,7 +26,9 @@ void ClearUiSeconds(void)
 
 void UpdateUiSeconds(void)
 {
-	unsigned char elapsedSecs = ticks - secondTicks;
+	#if 0
+	unsigned startTicks = ticks;
+	unsigned char elapsedSecs = startTicks - secondTicks;
 	
 	if (elapsedSecs) {
 		elapsedSecs += spareSecondTicks;
@@ -33,6 +37,16 @@ void UpdateUiSeconds(void)
 		
 		seconds += elapsedSecs;
 	
-		secondTicks = ticks;
+		secondTicks = startTicks;
 	}
+	#else
+	
+	byte startTicks = ticks;
+	byte elapsedTicks = startTicks - secondTicks;
+	while (elapsedTicks >= TICKS_PER_SEC) {
+		++seconds;
+		elapsedTicks -= TICKS_PER_SEC;
+		secondTicks += TICKS_PER_SEC;
+	}
+	#endif
 }
