@@ -34,6 +34,10 @@
 typedef unsigned short  dayTime_t;
 
 
+// This value is guaranteed never to be used for a valid dayTime.
+#define INVALID_DAYTIME  0x05DC  // AKA 25 hours, 0 minutes.
+
+
 // Don't touch this outside of this module - it's here just for access by the inline functions.
 DAYTIME_EXTERN unsigned short currentTime;
 
