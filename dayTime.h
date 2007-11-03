@@ -47,6 +47,9 @@ inline dayTime_t MakeDayTime(byte hours, byte minutes)
 	return (unsigned short)(hours) * 60 + (unsigned short) minutes;
 }
 
+// Returns the given time, divided up into hours and minutes and returned in the two specified variables.
+void DecodeDayTime(dayTime_t time, byte& hours, byte& minutes);
+
 // Sets the current time, in a 24-hour clock.
 void SetDayTime(byte hours, byte minutes);
 
@@ -55,9 +58,10 @@ void SetDayTime(byte hours, byte minutes);
 byte UpdateDayTime(void);
 
 // Gets the current time, in a 24-hour clock, into the specified variables.
-void GetDayTime(byte& hours, byte& minutes);
-
-
+inline void GetDayTime(byte& hours, byte& minutes)
+{
+	DecodeDayTime(currentTime, hours, minutes);
+}
 
 
 #endif

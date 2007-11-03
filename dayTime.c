@@ -35,8 +35,8 @@ byte UpdateDayTime(void)
 	return result;
 }
 
-void GetDayTime(byte& hours, byte& minutes)
+void DecodeDayTime(dayTime_t time, byte& hours, byte& minutes)
 {
-	hours = currentTime / MINUTES_PER_HOUR;
-	minutes = currentTime % MINUTES_PER_HOUR;
+	hours = time / MINUTES_PER_HOUR;
+	minutes = time % MINUTES_PER_HOUR;
 }
