@@ -20,12 +20,17 @@ void ClearUiSeconds(void)
 	secondTicks = ticks;
 }
 
-void UpdateUiSeconds(void)
+byte UpdateUiSeconds(void)
 {
+	byte result = false;
+	
 	byte elapsedTicks = ticks - secondTicks;
 	while (elapsedTicks >= TICKS_PER_SEC) {
 		++seconds;
+
 		elapsedTicks -= TICKS_PER_SEC;
 		secondTicks += TICKS_PER_SEC;
+		
+		result = true;
 	}
 }

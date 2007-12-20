@@ -32,7 +32,8 @@ void ClearUiSeconds(void);
 // Call this periodically to update the count.
 // Just needs to be called with as much resolution as is needed for timekeeping.
 // And, must be called at least once a minute.
-void UpdateUiSeconds(void);
+// Returns true if we've just rolled over to a new second.
+byte UpdateUiSeconds(void);
 
 
 #endif
