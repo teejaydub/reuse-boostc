@@ -22,13 +22,9 @@ void CheckButtons(void)
 	
 	for (i = FIRST_BTN; i <= LAST_BTN; i++) {
 		if (!(BUTTON_PORT & mask)) {
-			if (*down == MIN_DOWNS) {
+			if (*down == MIN_DOWNS)
 				// We have a press.
 				buttonsPressed |= mask;
-				
-				// Record that we had some user action - reset the inaction timeout.
-				ticksSinceAction = 0;
-			}
 			
 			if (*down <= MIN_DOWNS)
 				++(*down);
@@ -39,4 +35,25 @@ void CheckButtons(void)
 		mask <<= 1;
 		++down;
 	}
+}
+
+void InitButtons(void)
+{
+	BUTTON_TRIS |= ALL_BTNS_MASK;
+	buttonsPressed = 0;
+}
+
+byte GetButton(void)
+{
+	byte i;
+	byte mask = (1 << FIRST_BTN);
+	for (i = FIRST_BTN; i <= LAST_BTN; i++) {
+		if (buttonsPressed & mask) {
+			clear_bit(buttonsPressed, i);
+			return i;
+		}
+		mask <<= 1;
+	}
+	
+	return NO_BTN;
 }
