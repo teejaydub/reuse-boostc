@@ -38,13 +38,14 @@ typedef unsigned short  dayTime_t;
 #define INVALID_DAYTIME  0x05DC  // AKA 25 hours, 0 minutes.
 
 
-// Don't touch this outside of this module - it's here just for access by the inline functions.
-DAYTIME_EXTERN unsigned short currentTime;
+// Don't change this outside of this module.
+// Format is minutes since midnight.
+DAYTIME_EXTERN dayTime_t currentTime;
 
 
 inline dayTime_t MakeDayTime(byte hours, byte minutes)
 {
-	return (unsigned short)(hours) * 60 + (unsigned short) minutes;
+	return (unsigned short)(hours) * MINUTES_PER_HOUR + (unsigned short) minutes;
 }
 
 // Returns the given time, divided up into hours and minutes and returned in the two specified variables.
