@@ -59,10 +59,7 @@ void SetDayTime(byte hours, byte minutes);
 byte UpdateDayTime(void);
 
 // Gets the current time, in a 24-hour clock, into the specified variables.
-inline void GetDayTime(byte& hours, byte& minutes)
-{
-	DecodeDayTime(currentTime, hours, minutes);
-}
+#define GetDayTime(hours, minutes)  DecodeDayTime(currentTime, hours, minutes)
 
 
 #endif
