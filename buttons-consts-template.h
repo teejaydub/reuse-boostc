@@ -18,6 +18,7 @@
 // The individual button masks.
 #define PREV_BTN_MASK  (1 << PREV_BTN)
 #define NEXT_BTN_MASK  (1 << NEXT_BTN)
+#define ALL_BTNS_MASK  (PREV_BTN_MASK | NEXT_BTN_MASK)
 
 #define FIRST_BTN  PREV_BTN
 #define LAST_BTN  NEXT_BTN
