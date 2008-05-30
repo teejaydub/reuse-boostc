@@ -29,7 +29,8 @@
 // This is returned when there was an error reading the temperature.
 // It's not a value the sensor is supposed to ever return.
 // It's in fixed-point degrees C.
-#define DT_BAD_TEMPERATURE  ((short) 0x6400)
+#define DT_BAD_TEMPERATURE_VAL  0x6400
+#define DT_BAD_TEMPERATURE  ((short) DT_BAD_TEMPERATURE_VAL)
 
 
 // Returns the number of sensors connected to the specified bus.
