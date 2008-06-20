@@ -26,9 +26,9 @@ SHADOW_REGS_EXTERN byte portc_;
 // Sets the given bit in a shadowed port.
 // The bit number must be constant.
 #define SET_SHADOW_BIT(regName, shadowReg, bit, newValue)  { shadowReg.bit = newValue; regName = shadowReg; }
-#define SET_SHADOW_A_BIT(pin, newValue)  { porta_.bit = newValue; porta = porta_; }
-#define SET_SHADOW_B_BIT(pin, newValue)  { portb_.bit = newValue; portb = portb_; }
-#define SET_SHADOW_C_BIT(pin, newValue)  { portc_.bit = newValue; portc = portc_; }
+#define SET_SHADOW_A_BIT(bit, newValue)  { porta_.bit = newValue; porta = porta_; }
+#define SET_SHADOW_B_BIT(bit, newValue)  { portb_.bit = newValue; portb = portb_; }
+#define SET_SHADOW_C_BIT(bit, newValue)  { portc_.bit = newValue; portc = portc_; }
 
 #endif
 //_TJW_SHADOWREGS_H
