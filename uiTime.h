@@ -4,7 +4,7 @@
 // Resolution is milliseconds and seconds under a minute; 
 // accuracy is dependent on the driving method.
 //
-// Can be driven off of Timer 0 with most of the overhead handled here, 
+// Can be driven off of Timer 0 or Timer 1 with most of the overhead handled here,
 // or from a 60 Hz external signal.
 
 #ifndef __UITIME_H
@@ -27,6 +27,8 @@
 //
 // Only change this value if it's only used to mean one thing in your app.
 // If you only need one UI timer, you can save one byte of RAM that way (FWTW).
+//
+// ASSUMES A CLOCK RATE OF 4 MHz at the moment!
 UITIME_EXTERN unsigned char ticks;
 
 // Resets the timer to 0.
@@ -38,11 +40,15 @@ void ResetUITimer(void);
 
 
 //====================================================================
-// Routines for using Timer 0 as the time source
+// Routines for using Timer 0 or 1 as the time source
 
 // Initializes, and dedicates Timer 0 for use and maintenance by this module.
 // Requires that GIE is enabled elsewhere, and that UiTimeInterrupt is called.
 void InitUiTime_Timer0(void);
+
+// Initializes, and dedicates Timer 1 for use and maintenance by this module.
+// Requires that GIE is enabled elsewhere, and that UiTimeInterrupt1 is called.
+void InitUiTime_Timer1(void);
 
 // Call this in your interrupt handler if using Timer 0.
 // Returns true about once a millisecond, which can be used for other tasks.
@@ -54,6 +60,9 @@ void InitUiTime_Timer0(void);
 //			CheckButtons();
 //	}
 unsigned char UiTimeInterrupt(void);
+
+// Call this in your interrupt handler if using Timer 1.
+void UiTimeInterrupt1(void);
 
 
 //====================================================================
