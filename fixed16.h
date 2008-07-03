@@ -15,23 +15,31 @@ inline fixed16 fixedFromByte(char b)
 {
 	return ((fixed16) b) << 8;
 }
+// This version is more efficient.
+#define FIXED_FROM_BYTE(b)  (b << 8)
 
 inline fixed16 makeFixed(char integral, unsigned char fractional)
 {
 	return (((fixed16) integral) << 8) | ((fixed16) fractional);
 }
+// This version is more efficient.
+#define MAKE_FIXED(result, integral, fractional)  MAKESHORT(result, fractional, integral)
 
 // Returns the integral part of f in i.
 inline void fixedIntegralTo(fixed16 f, signed char& i)
 {
 	HIBYTE(i, f);
 }
+// This version is more efficient.
+#define FIXED_INTEGRAL_TO(f, i)  HIBYTE(i, f)
 
 // Returns the fractional part of f times 256.
 inline void fixedFracTo(fixed16 f, unsigned char& frac)
 {
 	LOBYTE(frac, f);
 }
+// This version is more efficient.
+#define FIXED_FRAC_TO(f, frac)  LOBYTE(frac, f)
 
 // Returns the tenths digit of the fractional part of f.
 // I.e., if f = 1.2, returns 2.
