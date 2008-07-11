@@ -1,6 +1,6 @@
 /* buttons - Generic module for handling momentary pushbuttons connected each to a port pin.
 	Handles debouncing.
-	The caller must 
+	Works well with uiTime, but can also function without it - requires no timers.
 	Copyright (c) 2007-2008 by Six Mile Creek Systems LLC.
 */
 
@@ -37,7 +37,8 @@ void InitButtons(void);
 // Sets a bit in buttonsPressed whenever a button is pressed and stable long enough.
 void CheckButtons(void);
 
-// Returns the *_BTN index corresponding to the next key pressed, or NO_BTN if none was pressed.
+// Returns the *_BTN index (from buttons-consts.h) corresponding to the next key pressed, 
+// or NO_BTN if none was pressed.
 // Basically pulls out the bits of buttonsPressed and zeroes them out.
 // Prefers low-numbered buttons first, if multiple buttons are pressed.
 byte GetButton(void);
