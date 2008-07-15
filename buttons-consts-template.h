@@ -5,6 +5,8 @@
 #ifndef __BUTTONS_CONSTS
 #define __BUTTONS_CONSTS
 
+// Define this if buttons are pulled up on press, rather than pulled down (the default).
+//#define BUTTONS_ACTIVE_HIGH
 
 // The port used for buttons - all buttons must be on the same port.
 #define BUTTON_PORT  portb

@@ -21,7 +21,12 @@ void CheckButtons(void)
 	byte mask = 1 << FIRST_BTN;
 	
 	for (i = FIRST_BTN; i <= LAST_BTN; i++) {
-		if (!(BUTTON_PORT & mask)) {
+		if (
+			#ifndef BUTTONS_ACTIVE_HIGH
+			!
+			#endif
+			(BUTTON_PORT & mask)) 
+		{
 			if (*down == MIN_DOWNS)
 				// We have a press.
 				buttonsPressed |= mask;
