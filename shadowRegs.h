@@ -25,10 +25,15 @@ SHADOW_REGS_EXTERN byte portc_;
 	
 // Sets the given bit in a shadowed port.
 // The bit number must be constant.
+// NOTE: When newValue depends on shadowReg, BoostC seems to generate bad code!
 #define SET_SHADOW_BIT(regName, shadowReg, bit, newValue)  { shadowReg.bit = newValue; regName = shadowReg; }
 #define SET_SHADOW_A_BIT(bit, newValue)  { porta_.bit = newValue; porta = porta_; }
 #define SET_SHADOW_B_BIT(bit, newValue)  { portb_.bit = newValue; portb = portb_; }
 #define SET_SHADOW_C_BIT(bit, newValue)  { portc_.bit = newValue; portc = portc_; }
+	
+// Toggles the given bit in a shadowed port.
+// The bit number must be constant.
+#define TOGGLE_SHADOW_BIT(regName, shadowReg, bit)  { shadowReg.bit ^= (1 << bit); regName = shadowReg; }
 
 #endif
 //_TJW_SHADOWREGS_H
