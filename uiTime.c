@@ -7,6 +7,16 @@
 #include "uiTime.h"
 
 
+// Compatibility defines for 18F series.
+#if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683)
+	// These use the default T0IF.
+#elif defined(_PIC18F2620) || defined(_PIC18F2320)
+	#define T0IF  TMR0IF
+#else
+	#error "uiTime.c - update for this chip"
+#endif
+
+
 // Rolls over every "tick".
 // A tick is 0.262 seconds; there are about 3.8 per second.
 // Driven by Timer 0.
@@ -21,9 +31,18 @@ void ResetUITimer(void)
 
 void InitUiTime_Timer0(void)
 {
+	#if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683)
 	option_reg.T0CS = 0;  // T0 transition on internal CLKOUT
 	option_reg = (option_reg & 0xF0) | 0x01;  // 1:4 prescaler on Timer 0: rolls over with a period of 1.024 ms.
 	intcon.T0IE = 1;
+	#elif defined(_PIC18F2620) || defined(_PIC18F2320)
+	// Enable the timer 0 interrupt for debouncing the button, and set prescaler.
+	t0con = 0xC1;  // 1:4 prescaler on an 8-bit Timer 0: rolls over with a period of 1.024 ms.
+	intcon.TMR0IE = 1;
+	#else
+		#error "uiTime.c - update for this chip"
+	#endif
+
 	intcon.PEIE = 1;
 	tickScaler = 0;
 	ticks = 0;
