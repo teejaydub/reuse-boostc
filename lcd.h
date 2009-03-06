@@ -7,7 +7,7 @@
 // Copyright (C) 2004-2006 Pavel Baranov
 // Copyright (C) 2004-2006 David Hobday
 // Copyright (C) 2004 Andrew Smallridge
-// Modified 2007 by Timothy Weber
+// Modified 2007 by Timothy Weber - redistributed without permission, for use only with a valid BoostC license.
 //
 //
 // How to use - by David Hobday
