@@ -29,6 +29,7 @@
 	PIC12F675
 	PIC12F683
 	PIC16F688
+	PIC16F690
 	PIC16F916
 	PIC18F2320
 	PIC18F2620
@@ -56,13 +57,16 @@ inline void DisablePeripherals(void)
 	#endif
 	
 	// Disable A/D.
-	#if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683)
+	#if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683) || defined(_PIC16F690)
 		ansel = 0;
 	#endif
 	
-	#if defined(_PIC18F2320) || defined(_PIC18F2620) 
-		adcon1 = 0x0F;  // all digital inputs
+	#if defined(_PIC16F690)
+		anselh = 0;
 	#endif
+
+	#if defined(_PIC18F2320) || defined(_PIC18F2620) 
+		adcon1 = 0x0F;  // all digital inputs	#endif
 	
 	// Disable LCD driver.
 	#if defined(_PIC16F916)
