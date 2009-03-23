@@ -33,12 +33,21 @@ inline fixed16 fixedFromByte(char b)
 // This version is more efficient.
 #define FIXED_FROM_BYTE(b)  (b << 8)
 
+// Returns b as a fixed-point fraction, with no integral part.
+inline fixed16 fixedFracFromByte(char b)
+{
+	return (fixed16) b;
+}
+// This version is more efficient.
+#define FIXED_FRAC_FROM_BYTE(b)  (b)
+
 inline fixed16 makeFixed(char integral, unsigned char fractional)
 {
 	return (((fixed16) integral) << 8) | ((fixed16) fractional);
 }
 // This version is more efficient.
 #define MAKE_FIXED(result, integral, fractional)  MAKESHORT(result, fractional, integral)
+#define MAKE_FIXED_CONST(integral, fractional)  (integral * 256 + fractional)
 
 // Returns the integral part of f in i.
 inline void fixedIntegralTo(fixed16 f, signed char& i)
