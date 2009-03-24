@@ -18,6 +18,32 @@
 	Defines a type for 16-bit fixed point numbers with 8 integral and 8 fractional bits.
 
 	Only bare-bones support so far - just what's needed and timely for CoolBot.
+	
+	Rules for using fixed-point variables:
+	
+	- Convert integers and fractions to fixed-point variables using the various 
+		conversion routines.
+	
+	- You can add and subtract two fixed-point values directly.
+	
+	- You can multiply two fixed-point values together by right-shifting 8 bits.
+		The shift can take place on ONE of the two values beforehand,
+		or on the result afterwards.  This produces a fixed-point result.
+		
+	- Similarly, you can divide two fixed-point values and get a fixed result
+		by left-shifting the dividend (top) 8 bits, or by left-shifting 
+		the result 8 bits, or by right-shifting the divisor (bottom) 8 bits.
+		
+	- These shifts can also take place partly before and partly after,
+		to preserve resolution when you know ahead of time the maximum magnitude
+		of one of the operands.
+		
+	- You can multiply a fixed-point with a plain integer (8-bit or 16-bit)
+		directly - it's like you've already done the right-shift.
+		The result is fixed-point.
+		
+	- Similarly, you can divide a fixed-point by a plain integer directly
+		to get a fixed-point result.
 */
 
 #ifndef __FIXED16_H

@@ -50,7 +50,7 @@ SHADOW_REGS_EXTERN byte portc_;
 	
 // Toggles the given bit in a shadowed port.
 // The bit number must be constant.
-#define TOGGLE_SHADOW_BIT(regName, shadowReg, bit)  { shadowReg.bit ^= (1 << bit); regName = shadowReg; }
+#define TOGGLE_SHADOW_BIT(regName, shadowReg, bit)  { shadowReg ^= (1 << bit); regName = shadowReg; }
 
 #endif
 //_TJW_SHADOWREGS_H
