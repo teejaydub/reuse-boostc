@@ -91,6 +91,14 @@ inline void fixedFracTo(fixed16 f, unsigned char& frac)
 // This version is more efficient.
 #define FIXED_FRAC_TO(f, frac)  LOBYTE(frac, f)
 
+// Return f truncated to an integer.
+inline signed char fixedIntegral(fixed16 f)
+{
+	return f >> 8;
+}
+// More efficient.
+#define FIXED_INTEGRAL(f)  (f >> 8)
+
 // Returns the tenths digit of the fractional part of f.
 // I.e., if f = 1.2, returns 2.
 inline unsigned char fixedTenths(fixed16 f)
@@ -127,9 +135,9 @@ inline char fixedHasFrac(fixed16 f)
 }
 
 // Return f rounded to the nearest integer.
-inline char fixedRoundToByte(fixed16 f)
+inline signed char fixedRoundToByte(fixed16 f)
 {
-	return (char)((f + 0x0080) >> 8);
+	return (signed char)((f + 0x0080) >> 8);
 }
 
 // Return 1/f.
