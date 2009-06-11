@@ -18,7 +18,7 @@
 #include <system.h>
 #include "eeprom-tjw.h"
 
-// Chips that can read and write their program ROM call it 'EEARDL' instead of 'EEADR'.
+// Chips that can read and write their program ROM call it 'EEADRL' instead of 'EEADR'.
 // Compensate.
 #ifdef EEADRL
  // (If the header doesn't compensate already.)
@@ -30,8 +30,10 @@
 
 char read_eeprom(char addr)
 {
-	#ifdef _PIC18F2620
+	#if defined(_PIC18F2620) || defined(_PIC16F886)
 	clear_bit(eecon1, EEPGD);
+	#endif
+	#if defined(_PIC18F2620)
 	clear_bit(eecon1, CFGS);
 	eeadrh = 0;
 	#endif
@@ -42,8 +44,10 @@ char read_eeprom(char addr)
 
 void write_eeprom(char addr, char data)
 {        //---- Write eeprom -----
-	#ifdef _PIC18F2620
+	#if defined(_PIC18F2620) || defined(_PIC16F886)
 	clear_bit(eecon1, EEPGD);
+	#endif
+	#ifdef _PIC18F2620
 	clear_bit(eecon1, CFGS);
 	eeadrh = 0;
 	#endif

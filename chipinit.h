@@ -36,7 +36,7 @@
 */
 
 #if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683) 
-#elif defined(_PIC18F2320) || defined(_PIC18F2620) || defined(_PIC16F690)
+#elif defined(_PIC18F2320) || defined(_PIC18F2620) || defined(_PIC16F690) || defined(_PIC16F886)
 	// New chips supported must be listed here.
 #else
 	#error "chipinit.h: Chip not recognized; check code and add this chip's required settings"
@@ -57,12 +57,18 @@ inline void DisablePeripherals(void)
 		cmcon0 = 7;
 	#endif
 	
+	#if defined(_PIC16F886)
+		// These are the start-up defaults.
+		//cm1con0 = 0; 
+		//cm2con0 = 0;
+	#endif
+	
 	// Disable A/D.
-	#if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683) || defined(_PIC16F690)
+	#if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683) || defined(_PIC16F690) || defined(_PIC16F886)
 		ansel = 0;
 	#endif
 	
-	#if defined(_PIC16F690)
+	#if defined(_PIC16F690) || defined(_PIC16F886)
 		anselh = 0;
 	#endif
 
