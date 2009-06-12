@@ -130,6 +130,14 @@ void main(void)
 	x = FIXED_FROM_BYTE(-1);
 	L = log2_f(x);
 	
+	// log2(43,000) = 15.39 = 0x0F63
+	unsigned short xs = 43000;
+	L = log2_us(xs);
+	
+	// log2(22,535) = 14.46 = 0x0E75
+	xs = 22535;
+	L = log2_us(xs);
+	
 	x = 0;
 }
 #endif
