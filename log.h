@@ -1,4 +1,4 @@
-/* chipinit.h
+/* log.h
     Copyright (c) 2009 by Timothy J. Weber, tw@timothyweber.org.
 
     This program is free software: you can redistribute it and/or modify
@@ -13,9 +13,9 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-    
-    Provides various ways to compute logarithms.
 */
+    
+// Provides various ways to compute logarithms.
 
 #ifndef _LOG_H_
 #define _LOG_H_
