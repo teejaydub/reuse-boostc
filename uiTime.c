@@ -25,7 +25,7 @@
 // Compatibility defines for 18F series.
 #if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683) || defined(_PIC16F886)
 	// These use the default T0IF.
-#elif defined(_PIC18F2620) || defined(_PIC18F2320)
+#elif defined(_PIC18F2620) || defined(_PIC18F2320) || defined(_PIC18F1320)
 	#define T0IF  TMR0IF
 #else
 	#error "uiTime.c - update for this chip"
@@ -50,7 +50,7 @@ void InitUiTime_Timer0(void)
 	option_reg.T0CS = 0;  // T0 transition on internal CLKOUT
 	option_reg = (option_reg & 0xF0) | 0x01;  // 1:4 prescaler on Timer 0: rolls over with a period of 1.024 ms.
 	intcon.T0IE = 1;
-	#elif defined(_PIC18F2620) || defined(_PIC18F2320)
+	#elif defined(_PIC18F2620) || defined(_PIC18F2320) || defined(_PIC18F1320)
 	// Enable the timer 0 interrupt for debouncing the button, and set prescaler.
 	t0con = 0xC1;  // 1:4 prescaler on an 8-bit Timer 0: rolls over with a period of 1.024 ms.
 	intcon.TMR0IE = 1;
