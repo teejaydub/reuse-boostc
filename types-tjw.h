@@ -21,6 +21,10 @@
 // Unsigned chars are used all the time -- cut down on typing.
 typedef unsigned char byte;
 
+// Defines for normal and active-low logic.
+#define TRUE_ACTIVE_LOW  0
+#define FALSE_ACTIVE_LOW  1
+
 // Returns a bitmask for the specified bit number.
 #define BITMASK(bitNum)  (1 << bitNum)
 
