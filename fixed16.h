@@ -76,6 +76,7 @@ inline fixed16 makeFixed(char integral, unsigned char fractional)
 #define MAKE_FIXED_CONST(integral, fractional)  (integral * 256 + fractional)
 
 // Returns the integral part of f in i.
+// Note that this moves downward for negative numbers, e.g. fixedFloor(-0.5) = -1.
 inline void fixedIntegralTo(fixed16 f, signed char& i)
 {
 	HIBYTE(i, f);
@@ -84,6 +85,7 @@ inline void fixedIntegralTo(fixed16 f, signed char& i)
 #define FIXED_INTEGRAL_TO(f, i)  HIBYTE(i, f)
 
 // Returns the fractional part of f times 256.
+// Assumes f >= 0.
 inline void fixedFracTo(fixed16 f, unsigned char& frac)
 {
 	LOBYTE(frac, f);
@@ -91,7 +93,17 @@ inline void fixedFracTo(fixed16 f, unsigned char& frac)
 // This version is more efficient.
 #define FIXED_FRAC_TO(f, frac)  LOBYTE(frac, f)
 
-// Return f truncated to an integer.
+// Returns the fractional part of f as positive fixed-point.
+inline fixed16 fixedFrac(fixed16 f)
+{
+	if (f < 0)
+		f = -f;
+		
+	return f & 0x00FF;
+}
+
+// Returns the integral portion of f.
+// Note that this moves downward for negative numbers, e.g. fixedFloor(-0.5) = -1.
 inline signed char fixedIntegral(fixed16 f)
 {
 	return f >> 8;
@@ -100,32 +112,32 @@ inline signed char fixedIntegral(fixed16 f)
 #define FIXED_INTEGRAL(f)  (f >> 8)
 
 // Returns the tenths digit of the fractional part of f.
-// I.e., if f = 1.2, returns 2.
+// I.e., if f = 1.2, returns 2; 1.24 -> 2; 1.25 -> 3 (rounds up); -1.4 -> 4 (positive).
 inline unsigned char fixedTenths(fixed16 f)
 {
-	// Start out with 1/256ths.
-	unsigned char tempFixed;
-	fixedFracTo(f, tempFixed);
+	fixed16 tempFixed;
+	tempFixed = fixedFrac(f);  // Just the fractional part, positive.
+	tempFixed *= 10;  // Convert to tenths.
+	tempFixed += FIXED_FRAC_FROM_BYTE(0x0D);  // Round to the nearest tenth by adding 0.05.
 	
-	// Convert to 1/16ths.
-	tempFixed >>= 4;
-	
-	// Convert to 1/160ths.
-	tempFixed *= 10;
-	
-	// Add 0.05 = 1/20 = 8/160 so we round to the nearest tenth.
-	tempFixed += 8;
-	
-	// Convert to 1/10ths.
-	tempFixed >>= 4;
-	
-	return tempFixed;
+	return FIXED_INTEGRAL(tempFixed);  // Truncate and return.
 }
 
-// Returns f truncated to an integer.
-inline fixed16 fixedTrunc(fixed16 f)
+// Return the largest integer <= f, as a fixed-point value.
+// Note that this moves downward for negative numbers, e.g. fixedFloor(-0.5) = -1.
+inline fixed16 fixedFloor(fixed16 f)
 {
 	return f & 0xFF00;
+}
+
+// Returns the integral part of f, as a two's-complement value.
+// Moves toward zero, so fixedTruncToByte(-0.5) = 0.
+inline signed char fixedTruncToByte(fixed16 f)
+{
+	if (f < 0)
+		return -((-f) >> 8);
+	else
+		return f >> 8;
 }
 
 // Returns true if f has a nonzero fractional part.
@@ -135,11 +147,12 @@ inline char fixedHasFrac(fixed16 f)
 }
 
 // Return f rounded to the nearest integer.
+// Assumes f >= 0!
 inline signed char fixedRoundToByte(fixed16 f)
 {
 	return (signed char)((f + 0x0080) >> 8);
 }
-
+		
 // Return 1/f.
 inline fixed16 fixedReciprocal(fixed16 f)
 {
