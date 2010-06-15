@@ -62,7 +62,7 @@ void AcquireAndConvertAD(void)
 	adcon0.ADON = 1;
 
 	// Wait for settling and acquisition.
-	delay_ms(40);
+	delay_us(40);
 	
 	// Start conversion.
 	adcon0.GO_DONE = 1;
