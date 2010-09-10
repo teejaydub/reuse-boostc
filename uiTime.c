@@ -115,3 +115,18 @@ void UiTimeUpdate60(void)
 		ticks++;
 	}
 }
+
+void InitUiTime256(void)
+{
+	ResetUITimer();
+}
+
+unsigned char UiTimeUpdate256(void)
+{
+	if (++tickScaler >= 4) {
+		tickScaler = 0;
+		ticks++;
+		return true;
+	} else
+		return false;
+}

@@ -70,7 +70,8 @@ inline void BumpCapSenseChannel(void)
 }
 
 // Call this first in the main ISR.
-inline void CapSenseISR(void)
+// It returns true if there was a Timer0 interrupt.
+inline unsigned char CapSenseISR(void)
 {
 	if (intcon.T0IF) {
 		// Read TMR1.
@@ -84,7 +85,10 @@ inline void CapSenseISR(void)
 	
 		// Start the next reading.
 		RestartCapSenseTimer();
-	}
+		
+		return true;
+	} else
+		return false;
 }
 
 // Call this at the end of the ISR, after other processing.

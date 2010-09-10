@@ -90,4 +90,16 @@ void InitUiTime_60Hz(void);
 void UiTimeUpdate60(void);
 
 
+//====================================================================
+// Routines for using a 256-cycle timer like Timer 0 as a time source,
+// but managed elsewhere.
+
+// Call this once to initialize.
+void InitUiTime_256(void);
+
+// Call this every 256 cycles to update.
+// Returns true about once a millisecond, which can be used for other tasks.
+unsigned char UiTimeUpdate256(void);
+
+
 #endif
