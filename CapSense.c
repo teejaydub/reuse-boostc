@@ -77,4 +77,3 @@ void StartCapSense(void)
 {
 	RestartCapSenseTimer();
 }
-

@@ -12,13 +12,18 @@
 #ifndef _CAPSENSE_H
 #define _CAPSENSE_H
 
+#include "types-tjw.h"
+
+#define MAX_CAPSENSE_CHANNELS  4
+
 
 #ifdef IN_CAPSENSE
 #define CAPSENSE_EXTERN
 #else
 #define CAPSENSE_EXTERN  extern
 #endif
-CAPSENSE_EXTERN unsigned char currentCapSenseChannel;
+CAPSENSE_EXTERN byte currentCapSenseChannel;
+CAPSENSE_EXTERN unsigned int csReadings[MAX_CAPSENSE_CHANNELS];
 
 
 // Initializes.
@@ -28,6 +33,13 @@ void InitCapSense(void);
 // Call this when sensing should start.
 // Global interrupts must be enabled before this call.
 void StartCapSense(void);
+
+// Returns the last reading from the given sensor (0-3).
+// (Readings are filtered before they're accessed here.)
+inline unsigned int GetLastCapSenseReading(byte index)
+{
+	return csReadings[index];
+}
 
 // For internal use.
 // It's here so it can be inlined, for speed.
@@ -70,14 +82,19 @@ inline void BumpCapSenseChannel(void)
 
 // Call this first in the main ISR.
 // It returns true if there was a Timer0 interrupt.
-inline unsigned char CapSenseISR(void)
+// It's inline (and therefore so is much of this module) to save the call/return overhead in the ISR,
+// since it happens so often.
+inline byte CapSenseISR(void)
 {
 	if (intcon.T0IF) {
 		// Read TMR1.
+		unsigned int rawReading = tmr1l + (unsigned int) (tmr1h << 8);
 		
 		// Is it a button press?
 	
 		// Average the new value.
+		// Running average, over 16 samples.
+		csReadings[currentCapSenseChannel] += (rawReading - csReadings[currentCapSenseChannel]) / 16;
 	
 		// Move to the next sensor.
 		BumpCapSenseChannel();
