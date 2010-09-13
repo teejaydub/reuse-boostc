@@ -36,7 +36,6 @@ inline void RestartCapSenseTimer(void)
 	// Clear out and reset both timers.
 	// Timer 1 will start counting oscillations afresh,
 	// and Timer 0 will restart its count to 256 cycles till the interrupt.
-	intcon.T0IF = 0;
 	tmr0 = 0;
 	t1con.TMR1ON = 0;
 	tmr1l = 0;
@@ -95,6 +94,8 @@ inline unsigned char CapSenseISR(void)
 inline void CapSenseISRDone(void)
 {
 	if (intcon.T0IF)
+		// See the app notes: This means another interrupt has occurred before we returned from the last one.
+		// That means the current count is inaccurate, so it must be discarded.
 		RestartCapSenseTimer();
 }
 

@@ -95,7 +95,7 @@ void UiTimeUpdate60(void);
 // but managed elsewhere.
 
 // Call this once to initialize.
-void InitUiTime_256(void);
+void InitUiTime256(void);
 
 // Call this every 256 cycles to update.
 // Returns true about once a millisecond, which can be used for other tasks.

@@ -65,7 +65,9 @@ void InitCapSense(void)
 	
 	// Set up the interrupt on TMR0 overflow.
 	// It runs free, and we check TMR1's value on each TMR0 overflow interrupt.
+	option_reg.T0CS = 0;  // T0 transition on internal CLKOUT
 	intcon.T0IE = 1;
+	intcon.PEIE = 1;
 	
 currentCapSenseChannel = 1;
 	SetCapSenseChannel();

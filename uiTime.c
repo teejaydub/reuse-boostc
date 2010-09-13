@@ -123,9 +123,13 @@ void InitUiTime256(void)
 
 unsigned char UiTimeUpdate256(void)
 {
-	if (++tickScaler >= 4) {
-		tickScaler = 0;
-		ticks++;
+	static unsigned char postScaler4 = 0;
+	
+	if (++postScaler4 >= 4) {
+		postScaler4 = 0;
+
+		if (++tickScaler == 0)
+			ticks++;
 		return true;
 	} else
 		return false;
