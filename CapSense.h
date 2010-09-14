@@ -7,14 +7,22 @@
 		the S-R latch
 		the voltage reference
 		timers 0 and 1
+		
+	Requires:
+		types-tjw
+		uiTime
 */
 
 #ifndef _CAPSENSE_H
 #define _CAPSENSE_H
 
 #include "types-tjw.h"
+#include "uiTime.h"
 
 #define MAX_CAPSENSE_CHANNELS  4
+
+
+typedef signed short CapSenseReading;
 
 
 #ifdef IN_CAPSENSE
@@ -23,7 +31,7 @@
 #define CAPSENSE_EXTERN  extern
 #endif
 CAPSENSE_EXTERN byte currentCapSenseChannel;
-CAPSENSE_EXTERN unsigned int csReadings[MAX_CAPSENSE_CHANNELS];
+CAPSENSE_EXTERN CapSenseReading csReadings[MAX_CAPSENSE_CHANNELS];
 
 
 // Initializes.
@@ -36,7 +44,7 @@ void StartCapSense(void);
 
 // Returns the last reading from the given sensor (0-3).
 // (Readings are filtered before they're accessed here.)
-inline unsigned int GetLastCapSenseReading(byte index)
+inline CapSenseReading GetLastCapSenseReading(byte index)
 {
 	return csReadings[index];
 }
@@ -86,9 +94,9 @@ inline void BumpCapSenseChannel(void)
 // since it happens so often.
 inline byte CapSenseISR(void)
 {
-	if (intcon.T0IF) {
+	if (UiTimeInterrupt()) {
 		// Read TMR1.
-		unsigned int rawReading = tmr1l + (unsigned int) (tmr1h << 8);
+		CapSenseReading rawReading = (tmr1h << 8) | tmr1l;
 		
 		// Is it a button press?
 	

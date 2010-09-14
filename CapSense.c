@@ -42,12 +42,16 @@ void InitCapSense(void)
 	// Set current to the first one we're using.
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
 	currentCapSenseChannel = 0;
+	csReadings[0] = 0;
 	#elif CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2
 	currentCapSenseChannel = 1;
+	csReadings[1] = 0;
 	#elif CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3
 	currentCapSenseChannel = 2;
+	csReadings[2] = 0;
 	#elif CAPSENSE_CHANNELS & CAPSENSE_CHANNEL4
 	currentCapSenseChannel = 3;
+	csReadings[3] = 0;
 	#endif
 
 	// The low voltage reference is always used, and is on RA2, AN2.
@@ -65,9 +69,7 @@ void InitCapSense(void)
 	
 	// Set up the interrupt on TMR0 overflow.
 	// It runs free, and we check TMR1's value on each TMR0 overflow interrupt.
-	option_reg.T0CS = 0;  // T0 transition on internal CLKOUT
-	intcon.T0IE = 1;
-	intcon.PEIE = 1;
+	InitUiTime_Timer0();
 	
 currentCapSenseChannel = 1;
 	SetCapSenseChannel();
