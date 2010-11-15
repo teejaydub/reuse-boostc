@@ -6,6 +6,8 @@
 #define IN_CAPSENSE
 
 #include <system.h>
+#include <memory.h>
+#include <stdlib.h>
 
 #include "CapSense.h"
 #include "CapSense-consts.h"
@@ -43,15 +45,19 @@ void InitCapSense(void)
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
 	currentCapSenseChannel = 0;
 	csReadings[0] = 0;
-	#elif CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2
+	csGlobalMin[0] = 0;
+	#elif CAPSENSE_CHANNELS & CAPSENSE_CHANNEL1
 	currentCapSenseChannel = 1;
 	csReadings[1] = 0;
-	#elif CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3
+	csGlobalMin[1] = 0;
+	#elif CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2
 	currentCapSenseChannel = 2;
 	csReadings[2] = 0;
-	#elif CAPSENSE_CHANNELS & CAPSENSE_CHANNEL4
+	csGlobalMin[2] = 0;
+	#elif CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3
 	currentCapSenseChannel = 3;
 	csReadings[3] = 0;
+	csGlobalMin[3] = 0;
 	#endif
 
 	// The low voltage reference is always used, and is on RA2, AN2.
@@ -72,10 +78,68 @@ void InitCapSense(void)
 	InitUiTime_Timer0();
 	
 currentCapSenseChannel = 1;
+
+	csCurrentMinBin = 0;
+	
+	// Clear all bins.
+	memset(csMinBin, 0, MAX_CAPSENSE_CHANNELS * NUM_CAPSENSE_MIN_BINS * sizeof(CapSenseReading)); 
+	memset(csGlobalMin, 0, MAX_CAPSENSE_CHANNELS * sizeof(CapSenseReading));
+	csLastBinTicks = ticks;
+
 	SetCapSenseChannel();
+	RestartCapSenseTimer();
+	
+	csButton = NO_CAPSENSE_BUTTONS;
 }
 
-void StartCapSense(void)
+byte GetCapSenseButton(void)
 {
-	RestartCapSenseTimer();
+	byte result = csButton;
+	csButton = NO_CAPSENSE_BUTTONS;
+	return result;
+}
+
+void BumpCapSenseMinBin(void)
+{
+	if (++csCurrentMinBin >= NUM_CAPSENSE_MIN_BINS)
+		csCurrentMinBin = 0;
+	
+	// Reset each channel's newly-current bin to contain just that channel's most-recent reading.
+	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
+	csMinBin[0][csCurrentMinBin] = csReadings[0];
+	#endif
+	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL1
+	csMinBin[1][csCurrentMinBin] = csReadings[1];
+	#endif
+	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2
+	csMinBin[2][csCurrentMinBin] = csReadings[2];
+	#endif
+	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3
+	csMinBin[3][csCurrentMinBin] = csReadings[3];
+	#endif
+	
+	// Find the global min again, over all bins, for all channels.
+	CapSenseReading min1, min2;
+	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
+	min1 = min(csMinBin[0][0], csMinBin[0][1]);
+	min2 = min(csMinBin[0][2], csMinBin[0][3]);
+	csGlobalMin[0] = min(min1, min2);
+	#endif
+	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL1
+	min1 = min(csMinBin[1][0], csMinBin[1][1]);
+	min2 = min(csMinBin[1][2], csMinBin[1][3]);
+	csGlobalMin[1] = min(min1, min2);
+	#endif
+	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2
+	min1 = min(csMinBin[2][0], csMinBin[2][1]);
+	min2 = min(csMinBin[2][2], csMinBin[2][3]);
+	csGlobalMin[2] = min(min1, min2);
+	#endif
+	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3
+	min1 = min(csMinBin[3][0], csMinBin[3][1]);
+	min2 = min(csMinBin[3][2], csMinBin[3][3]);
+	csGlobalMin[3] = min(min1, min2);
+	#endif
+
+	csLastBinTicks = ticks;
 }
