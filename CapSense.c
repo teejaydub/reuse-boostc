@@ -85,6 +85,7 @@ currentCapSenseChannel = 1;
 	memset(csMinBin, 0, MAX_CAPSENSE_CHANNELS * NUM_CAPSENSE_MIN_BINS * sizeof(CapSenseReading)); 
 	memset(csGlobalMin, 0, MAX_CAPSENSE_CHANNELS * sizeof(CapSenseReading));
 	csLastBinTicks = ticks;
+	csHoldingAnyButton = false;
 
 	SetCapSenseChannel();
 	RestartCapSenseTimer();

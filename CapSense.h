@@ -25,6 +25,11 @@
 
 #define MAX_CAPSENSE_CHANNELS  4
 
+// A value that's only this much lower than the "global min" is not yet a button press.
+// Ensures that the system as a whole can drift a bit, slowly, without triggering button
+// presses in the process.
+#define DRIFT  1
+
 
 typedef signed short CapSenseReading;
 
@@ -66,6 +71,10 @@ CAPSENSE_EXTERN byte csCurrentMinBin;
 
 #define TICKS_PER_BIN_CHANGE  2
 CAPSENSE_EXTERN byte csLastBinTicks;
+
+CAPSENSE_EXTERN byte csLastButtonTicks;
+
+CAPSENSE_EXTERN bit csHoldingAnyButton;
 
 
 // Returns the last reading from the given sensor (0-3).
@@ -136,24 +145,35 @@ inline byte CapSenseISR(void)
 		CapSenseReading* currentGlobalMin = &csGlobalMin[currentCapSenseChannel];
 		CapSenseReading* currentReading = &csReadings[currentCapSenseChannel];
 		
-		// Is it a button press?
-		if (csButton == NO_CAPSENSE_BUTTONS && reading < *currentGlobalMin) {
-			// Yes: note it.
-			csButton = currentCapSenseChannel;
-		}
-	
 		// Average the new value.
 		// Running average, over 16 samples.
 		reading = *currentReading + (reading - *currentReading) / 16;
 		*currentReading = reading;
 		
+		// Is it a button press?
+		bit isBelowMin = reading < (*currentGlobalMin - DRIFT);
+		if (isBelowMin) {
+			if (csButton == NO_CAPSENSE_BUTTONS && !csHoldingAnyButton && isBelowMin) 
+			{
+				// Yes: note it.
+				csButton = currentCapSenseChannel;
+				csLastButtonTicks = ticks;
+				csHoldingAnyButton = true;
+			}
+		} else {
+			csHoldingAnyButton = false;
+		}
+	
 		// Update the minima.
-		CapSenseReading* currentMinBin = &csMinBin[currentCapSenseChannel][csCurrentMinBin];
-		if (reading < *currentMinBin) {
-			*currentMinBin = reading;
-			
-			if (reading < *currentGlobalMin)
-				*currentGlobalMin = reading;
+		// But not if a button is currently down... until it's been down for a second.
+		if (!csHoldingAnyButton || (ticks - csLastButtonTicks) > TICKS_PER_SEC) {
+			CapSenseReading* currentMinBin = &csMinBin[currentCapSenseChannel][csCurrentMinBin];
+			if (reading < *currentMinBin) {
+				*currentMinBin = reading;
+				
+				if (reading < *currentGlobalMin)
+					*currentGlobalMin = reading;
+			}
 		}
 		
 		// Move to the next min bin, every other tick (about twice a second).
