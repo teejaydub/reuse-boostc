@@ -19,16 +19,13 @@
 #ifndef _CAPSENSE_H
 #define _CAPSENSE_H
 
+#include <stdlib.h>
+
 #include "CapSense-consts.h"
 #include "types-tjw.h"
 #include "uiTime.h"
 
 #define MAX_CAPSENSE_CHANNELS  4
-
-// A value that's only this much lower than the "global min" is not yet a button press.
-// Ensures that the system as a whole can drift a bit, slowly, without triggering button
-// presses in the process.
-#define DRIFT  1
 
 
 typedef signed short CapSenseReading;
@@ -74,7 +71,9 @@ CAPSENSE_EXTERN byte csLastBinTicks;
 
 CAPSENSE_EXTERN byte csLastButtonTicks;
 
-CAPSENSE_EXTERN bit csHoldingAnyButton;
+// Set to one of the channels when that button is down, or NO_CAPSENSE_BUTTONS if none are down.
+// Will often still be down after GetCapSenseButton() has cleared csButton.
+CAPSENSE_EXTERN byte csHoldingButton;
 
 
 // Returns the last reading from the given sensor (0-3).
@@ -113,12 +112,28 @@ inline void SetCapSenseChannel(void)
 
 inline void BumpCapSenseChannel(void)
 {
-#if 0
 	currentCapSenseChannel++;
 	
-	if (currentCapSenseChannel >= NUM_CAPSENSE_CHANNELS)
+	// Skip unused channels.
+	#if !(CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0)
+	if (currentCapSenseChannel == 0)
+		currentCapSenseChannel++;
+	#endif
+	#if !(CAPSENSE_CHANNELS & CAPSENSE_CHANNEL1)
+	if (currentCapSenseChannel == 1)
+		currentCapSenseChannel++;
+	#endif
+	#if !(CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2)
+	if (currentCapSenseChannel == 2)
+		currentCapSenseChannel++;
+	#endif
+	#if !(CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3)
+	if (currentCapSenseChannel == 3)
+		currentCapSenseChannel++;
+	#endif
+	
+	if (currentCapSenseChannel >= MAX_CAPSENSE_CHANNELS)
 		currentCapSenseChannel = 0;
-#endif
 		
 	SetCapSenseChannel();
 
@@ -145,28 +160,38 @@ inline byte CapSenseISR(void)
 		CapSenseReading* currentGlobalMin = &csGlobalMin[currentCapSenseChannel];
 		CapSenseReading* currentReading = &csReadings[currentCapSenseChannel];
 		
-		// Average the new value.
+		// Compute the "pressed" threshold.
+		CapSenseReading threshold = *currentGlobalMin;
+		if (threshold > CS_SENSE_THRESHOLD) {
+			threshold -= CS_SENSE_THRESHOLD;
+			threshold = max(threshold, CS_MIN_THRESHOLD);
+		} else
+			threshold = CS_MIN_THRESHOLD;
+		
+		// Filter the new value.
 		// Running average, over 16 samples.
 		reading = *currentReading + (reading - *currentReading) / 16;
 		*currentReading = reading;
-		
+
 		// Is it a button press?
-		bit isBelowMin = reading < (*currentGlobalMin - DRIFT);
+		bit isBelowMin = reading < threshold;
 		if (isBelowMin) {
-			if (csButton == NO_CAPSENSE_BUTTONS && !csHoldingAnyButton && isBelowMin) 
+			if (csButton == NO_CAPSENSE_BUTTONS && csHoldingButton == NO_CAPSENSE_BUTTONS && isBelowMin) 
 			{
 				// Yes: note it.
 				csButton = currentCapSenseChannel;
 				csLastButtonTicks = ticks;
-				csHoldingAnyButton = true;
+				csHoldingButton = currentCapSenseChannel;
 			}
 		} else {
-			csHoldingAnyButton = false;
+			// If this is the button we were holding, we're not holding it anymore.
+			if (csHoldingButton == currentCapSenseChannel)
+				csHoldingButton = NO_CAPSENSE_BUTTONS;
 		}
 	
 		// Update the minima.
 		// But not if a button is currently down... until it's been down for a second.
-		if (!csHoldingAnyButton || (ticks - csLastButtonTicks) > TICKS_PER_SEC) {
+		if (!csHoldingButton == NO_CAPSENSE_BUTTONS || (ticks - csLastButtonTicks) > TICKS_PER_SEC) {
 			CapSenseReading* currentMinBin = &csMinBin[currentCapSenseChannel][csCurrentMinBin];
 			if (reading < *currentMinBin) {
 				*currentMinBin = reading;

@@ -77,15 +77,14 @@ void InitCapSense(void)
 	// It runs free, and we check TMR1's value on each TMR0 overflow interrupt.
 	InitUiTime_Timer0();
 	
-currentCapSenseChannel = 1;
-
+	currentCapSenseChannel = 0;
 	csCurrentMinBin = 0;
 	
 	// Clear all bins.
 	memset(csMinBin, 0, MAX_CAPSENSE_CHANNELS * NUM_CAPSENSE_MIN_BINS * sizeof(CapSenseReading)); 
 	memset(csGlobalMin, 0, MAX_CAPSENSE_CHANNELS * sizeof(CapSenseReading));
 	csLastBinTicks = ticks;
-	csHoldingAnyButton = false;
+	csHoldingButton = NO_CAPSENSE_BUTTONS;
 
 	SetCapSenseChannel();
 	RestartCapSenseTimer();
