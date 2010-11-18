@@ -9,11 +9,25 @@
 #include <memory.h>
 #include <stdlib.h>
 
+#include "eeprom-tjw.h"
 #include "math-tjw.h"
 
 #include "CapSense.h"
 #include "CapSense-consts.h"
 
+
+// Sensitivity thresholds:
+// A value that's only this much lower than the "global min" is not yet a button press.
+// Ensures that the system as a whole can drift a bit, slowly, without triggering button
+// presses in the process.
+// Needs to be determined experimentally by viewing the readings returned for each button.
+// These could be 16-bit values, but they're never above 255, so I'm storing them as single bytes.
+// The default sensitivity thresholds are stored in EEPROM.
+#if CAPSENSE_EEPROM_ADDR != 0xF0
+ #error "Need to adjust address in data #pragma."
+#endif
+#pragma DATA 0x21F0, 0x3E, 0xEC, 0xEC, 0xE6
+// During init, they're copied to RAM in csThresholds for faster access while scanning.
 
 CapSenseReading csReadings[MAX_CAPSENSE_CHANNELS];
 
@@ -133,6 +147,8 @@ void InitCapSense(void)
 	memset(csReadings, 0x7F, sizeof(csReadings));
 	csLastBinTicks = ticks;
 	csHoldingButton = NO_CAPSENSE_BUTTONS;
+	
+	read_eeprom_block(CAPSENSE_EEPROM_ADDR, (char*) csThresholds, CAPSENSE_EEPROM_LEN);
 
 	SetCapSenseChannel();
 	RestartCapSenseTimer();
@@ -236,8 +252,9 @@ byte CapSenseISR(void)
 		
 		// Compute the "pressed" threshold.
 		CapSenseReading threshold = *currentGlobalMin;
-		if (threshold > CS_SENSE_THRESHOLD) {
-			threshold -= CS_SENSE_THRESHOLD;
+		byte sensitivity = csThresholds[currentCapSenseChannel];
+		if (threshold > sensitivity) {
+			threshold -= sensitivity;
 			threshold = max(threshold, CS_MIN_THRESHOLD);
 		} else
 			threshold = CS_MIN_THRESHOLD;
@@ -272,12 +289,8 @@ byte CapSenseISR(void)
 #endif		
 		) {
 			CapSenseReading* currentMinBin = &csMinBin[currentCapSenseChannel][csCurrentMinBin];
-			if (reading < *currentMinBin) {
+			if (reading < *currentMinBin)
 				*currentMinBin = reading;
-				
-				if (reading < *currentGlobalMin)
-					*currentGlobalMin = reading;
-			}
 		}
 		
 		// Move to the next min bin, every other tick (about twice a second).
@@ -467,6 +480,9 @@ byte CapSenseContinueCalibrate(void)
 //csThresholds[csCalButton] = minPress[csCalButton][2];
 //csThresholds[csCalButton] = minOtherButtons[csCalButton];
 		}
+	
+		// Copy results back to EEPROM.
+		write_eeprom_block(CAPSENSE_EEPROM_ADDR, (char*) csThresholds, CAPSENSE_EEPROM_LEN);
 	
 		// Signal when done.
 		return false;

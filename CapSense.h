@@ -72,8 +72,11 @@ byte CapSenseISR(void);
 // Call this at the end of the ISR, after other processing.
 void CapSenseISRDone(void);
 
+
 //==================================================================
 // Calibration
+
+CAPSENSE_EXTERN byte csThresholds[MAX_CAPSENSE_CHANNELS];
 
 // Turn this on in CapServe-consts.h to enable the functions below.
 #ifdef CS_AUTO_CALIBRATE
@@ -100,8 +103,7 @@ typedef enum {
 CAPSENSE_EXTERN CSAutoCalibrateState csAutoCalibrateState;
 CAPSENSE_EXTERN byte csCalButton;
 
-// Display these results as appropriate when done.
-CAPSENSE_EXTERN CapSenseReading csThresholds[MAX_CAPSENSE_CHANNELS];
+// Display the results from csThresholds, above, as appropriate when done.
 
 typedef enum {
 	acrFail,  // Can't distinguish between this and the neighboring buttons.
