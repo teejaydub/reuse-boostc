@@ -9,14 +9,15 @@
 #include <memory.h>
 #include <stdlib.h>
 
+#include "math-tjw.h"
+
 #include "CapSense.h"
 #include "CapSense-consts.h"
 
 
-byte csButton;
-
 CapSenseReading csReadings[MAX_CAPSENSE_CHANNELS];
 
+// The channel currently being timed by the hardware.
 byte currentCapSenseChannel;
 
 // The lowest value read on the given channel in the last two seconds.
@@ -35,6 +36,13 @@ byte csLastButtonTicks;
 // Will often still be down after GetCapSenseButton() has cleared csButton.
 byte csHoldingButton;
 
+// Holds the index of the most-recently-pressed button, or NO_CAPSENSE_BUTTONS
+// if none have been pressed since the last call to GetCapSenseButton().
+byte csButton;
+
+
+//==================================================================
+// Main code
 
 inline void SetCapSenseChannel(void)
 {
@@ -59,6 +67,12 @@ inline void RestartCapSenseTimer(void)
 	tmr1h = 0;
 	t1con.TMR1ON = 1;
 	intcon.T0IF = 0;
+}
+
+// Returns true if the channel with the specified index is used, as defined by the constants in CapSense-consts.h.
+byte IsChannelUsed(byte channel)
+{
+	return (1 << channel) & CAPSENSE_CHANNELS;
 }
 
 void InitCapSense(void)
@@ -91,23 +105,7 @@ void InitCapSense(void)
 	#endif
 
 	// Set current to the first one we're using.
-	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
-	currentCapSenseChannel = 0;
-	csReadings[0] = 0;
-	csGlobalMin[0] = 0;
-	#elif CAPSENSE_CHANNELS & CAPSENSE_CHANNEL1
-	currentCapSenseChannel = 1;
-	csReadings[1] = 0;
-	csGlobalMin[1] = 0;
-	#elif CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2
-	currentCapSenseChannel = 2;
-	csReadings[2] = 0;
-	csGlobalMin[2] = 0;
-	#elif CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3
-	currentCapSenseChannel = 3;
-	csReadings[3] = 0;
-	csGlobalMin[3] = 0;
-	#endif
+	currentCapSenseChannel = FIRST_CAPSENSE_CHANNEL;
 
 	// The low voltage reference is always used, and is on RA2, AN2.
 	ansel.2 = 1;
@@ -126,12 +124,13 @@ void InitCapSense(void)
 	// It runs free, and we check TMR1's value on each TMR0 overflow interrupt.
 	InitUiTime_Timer0();
 	
-	currentCapSenseChannel = 0;
-	csCurrentMinBin = 0;
-	
 	// Clear all bins.
-	memset(csMinBin, 0, MAX_CAPSENSE_CHANNELS * NUM_CAPSENSE_MIN_BINS * sizeof(CapSenseReading)); 
-	memset(csGlobalMin, 0, MAX_CAPSENSE_CHANNELS * sizeof(CapSenseReading));
+	// (Actually uses 0x7F7F, which is almost the highest number available, for convenience;
+	// this ensures that the mins will decrease when actual readings arrive.)
+	csCurrentMinBin = 0;
+	memset(csMinBin, 0x7F, sizeof(csMinBin)); 
+	memset(csGlobalMin, 0x7F, sizeof(csGlobalMin));
+	memset(csReadings, 0x7F, sizeof(csReadings));
 	csLastBinTicks = ticks;
 	csHoldingButton = NO_CAPSENSE_BUTTONS;
 
@@ -203,10 +202,6 @@ inline void BumpCapSenseChannel(void)
 	currentCapSenseChannel++;
 	
 	// Skip unused channels.
-	#if !(CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0)
-	if (currentCapSenseChannel == 0)
-		currentCapSenseChannel++;
-	#endif
 	#if !(CAPSENSE_CHANNELS & CAPSENSE_CHANNEL1)
 	if (currentCapSenseChannel == 1)
 		currentCapSenseChannel++;
@@ -220,8 +215,8 @@ inline void BumpCapSenseChannel(void)
 		currentCapSenseChannel++;
 	#endif
 	
-	if (currentCapSenseChannel >= MAX_CAPSENSE_CHANNELS)
-		currentCapSenseChannel = 0;
+	if (currentCapSenseChannel > LAST_CAPSENSE_CHANNEL)
+		currentCapSenseChannel = FIRST_CAPSENSE_CHANNEL;
 		
 	SetCapSenseChannel();
 
@@ -270,7 +265,12 @@ byte CapSenseISR(void)
 	
 		// Update the minima.
 		// But not if a button is currently down... until it's been down for a second.
-		if (!csHoldingButton == NO_CAPSENSE_BUTTONS || (ticks - csLastButtonTicks) > TICKS_PER_SEC) {
+		if (!csHoldingButton == NO_CAPSENSE_BUTTONS || (ticks - csLastButtonTicks) > TICKS_PER_SEC
+#ifdef CS_AUTO_CALIBRATE
+			// But DO update the minima during calibration.
+			|| csAutoCalibrateState == acPressAndReleaseButton
+#endif		
+		) {
 			CapSenseReading* currentMinBin = &csMinBin[currentCapSenseChannel][csCurrentMinBin];
 			if (reading < *currentMinBin) {
 				*currentMinBin = reading;
@@ -299,3 +299,180 @@ void CapSenseISRDone(void)
 		// That means the current count is inaccurate, so it must be discarded.
 		RestartCapSenseTimer();
 }
+
+
+//==================================================================
+// Calibration
+
+#ifdef CS_AUTO_CALIBRATE
+
+#define SETTLE_TICKS  (TICKS_PER_BIN_CHANGE * NUM_CAPSENSE_MIN_BINS + 1)  // Allow time for all bins to be overwritten.
+byte ticksStateStart;
+
+#define TIMES_THRU_BUTTONS  3
+byte timesThruButtons;
+
+CapSenseReading minWhileWaiting[MAX_CAPSENSE_CHANNELS];
+CapSenseReading minPress[MAX_CAPSENSE_CHANNELS][TIMES_THRU_BUTTONS];  // min of each button while it's supposed to be pressed
+CapSenseReading minOtherButtons[MAX_CAPSENSE_CHANNELS];  // min of each button while other buttons are being pressed
+
+// Sets all elements in the array of length count to value.
+void InitReadingArray(CapSenseReading* array, byte count, CapSenseReading value)
+{
+	while (count--)
+		*array++ = value;
+}
+
+inline void EnterState(CSAutoCalibrateState newState)
+{
+	csAutoCalibrateState = newState;
+	ticksStateStart = ticks;
+}
+
+void CapSenseStartCalibrate(void)
+{
+	EnterState(acStart);
+}
+
+byte CapSenseContinueCalibrate(void)
+{
+	byte channel;
+	
+	// Call this to ensure buttons are taken out of the one-element "queue",
+	// simulating normal processing.
+	GetCapSenseButton();
+	
+	// State actions and transitions.
+	
+	switch (csAutoCalibrateState) {
+	
+	case acStart:
+		csCalButton = FIRST_CAPSENSE_CHANNEL;
+		timesThruButtons = 0;
+		InitReadingArray(minWhileWaiting, MAX_CAPSENSE_CHANNELS, MAX_CS_READING);
+		InitReadingArray(minPress, MAX_CAPSENSE_CHANNELS * TIMES_THRU_BUTTONS, MAX_CS_READING);
+		InitReadingArray(minOtherButtons, MAX_CAPSENSE_CHANNELS, MAX_CS_READING);
+		EnterState(acPressNothing);
+		break;
+		
+	case acPressNothing:
+		if (ticks - ticksStateStart > SETTLE_TICKS) {
+			// Done waiting.
+			
+			// Store the current mins.
+			// Do it as an accumulate, because we hit this state twice.
+			for (channel = FIRST_CAPSENSE_CHANNEL; channel <= LAST_CAPSENSE_CHANNEL; ++channel)
+				accumulateMin<CapSenseReading>(&minWhileWaiting[channel], csGlobalMin[channel]);
+			
+			// Move to the first button, if this is the first "nothing down" period.
+			if (timesThruButtons == 0)
+				EnterState(acPressAndReleaseButton);
+			else
+				// Otherwise, we're done.
+				EnterState(acDone);
+		}
+		break;
+		
+	case acPressAndReleaseButton:
+		// Inspect the min values for all active buttons.
+		for (channel = FIRST_CAPSENSE_CHANNEL; channel <= LAST_CAPSENSE_CHANNEL; ++channel) {
+			// Where do we put it?
+			CapSenseReading* accumulator;
+			if (channel == csCalButton) 
+				// Accumulate the min for the current button and trial.
+				accumulator = &minPress[csCalButton][timesThruButtons];
+			else
+				// Accumulate the min for other channels while this button is being pressed, over all trials.
+				accumulator = &minOtherButtons[csCalButton];
+
+			// Put it there.
+			// Get it from the min bin, which already contains a min of many recent readings.
+			accumulateMin<CapSenseReading>(accumulator, csMinBin[channel][csCurrentMinBin]);
+		}
+		
+		if (ticks - ticksStateStart > SETTLE_TICKS) {
+			// Done waiting.
+		
+			// Move to the next button.
+			EnterState(acPressAndReleaseButton);
+			++csCalButton;
+			
+			// Skip over inactive channels.
+			while (!IsChannelUsed(csCalButton) && csCalButton <= LAST_CAPSENSE_CHANNEL)
+				++csCalButton;
+				
+			// Start a new round, if we've been through them.
+			if (csCalButton > LAST_CAPSENSE_CHANNEL) {
+				csCalButton = FIRST_CAPSENSE_CHANNEL;
+				++timesThruButtons;
+				
+				if (timesThruButtons >= TIMES_THRU_BUTTONS)
+					EnterState(acPressNothing);
+			} 
+		}
+		break;
+	}
+	
+	if (csAutoCalibrateState == acDone) {
+		// minWhileWaiting, minPress, and minOthers have been collected.
+		// Finish computing the thresholds.
+		for (csCalButton = FIRST_CAPSENSE_CHANNEL; csCalButton <= LAST_CAPSENSE_CHANNEL; ++csCalButton) {
+			if (IsChannelUsed(csCalButton)) {
+				// Find the minimum quiescent reading on this channel.
+				CapSenseReading minWaiting = minWhileWaiting[csCalButton];
+			
+				// Find the minimum reading during *other* buttons' presses.
+				CapSenseReading minOthers = minOtherButtons[csCalButton];
+							
+				// Find the minimum and maximum readings during *this* button's presses.
+				CapSenseReading minMe = MAX_CS_READING;
+				CapSenseReading maxMe = 0;  // the max of all the mins - i.e., the low excursion for the weakest press
+				byte i;
+				for (i = 0; i < TIMES_THRU_BUTTONS; ++i) {
+					minMe = min(minMe, minPress[csCalButton][i]);
+					maxMe = max(maxMe, minPress[csCalButton][i]);
+				}
+				
+				// Report 0 and a Fail status if we can't ever tell the difference between a neighboring button and our own.
+				if (minOthers < minMe
+					|| minOthers - minMe < 2 * CS_MIN_THRESHOLD
+					|| minWaiting < minMe
+					|| minWaiting - minMe < CS_MIN_THRESHOLD)
+				{ 
+					csThresholds[csCalButton] = 0;
+					csResults[csCalButton] = acrFail;
+				} else {
+					// Otherwise, report the excursion distance from the steady-state "waiting" reading
+					// that will recognize the weakest button press, with a slight margin.
+					csThresholds[csCalButton] = minWaiting - maxMe - CS_MIN_THRESHOLD;
+				
+					if (minOthers < maxMe
+						|| minOthers - maxMe < 2 * CS_MIN_THRESHOLD 
+						|| minWaiting < maxMe
+						|| minWaiting - maxMe < CS_MIN_THRESHOLD)
+					{
+						csResults[csCalButton] = acrOK;
+					} else
+						csResults[csCalButton] = acrGreat;
+				}
+			} else {
+				// Blank out the results for unused buttons, just for completeness.
+				csResults[csCalButton] = acrFail;
+				csThresholds[csCalButton] = 0;
+			}
+			
+//csThresholds[csCalButton] = minWhileWaiting[csCalButton];
+//csThresholds[csCalButton] = minPress[csCalButton][0];
+//csThresholds[csCalButton] = minPress[csCalButton][1];
+//csThresholds[csCalButton] = minPress[csCalButton][2];
+//csThresholds[csCalButton] = minOtherButtons[csCalButton];
+		}
+	
+		// Signal when done.
+		return false;
+	} else
+		return true;
+}
+
+#endif
+// CS_AUTO_CALIBRATE

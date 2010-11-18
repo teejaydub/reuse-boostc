@@ -25,10 +25,18 @@
 #include "types-tjw.h"
 #include "uiTime.h"
 
+#ifdef IN_CAPSENSE
+#define CAPSENSE_EXTERN
+#else
+#define CAPSENSE_EXTERN  extern
+#endif
+
+
 #define MAX_CAPSENSE_CHANNELS  4
 
 
 typedef signed short CapSenseReading;
+#define MAX_CS_READING  0x7FFF
 
 
 // Initializes the module.
@@ -51,6 +59,7 @@ byte GetCapSenseButton(void);
 // (Readings are filtered before they're accessed here.)
 CapSenseReading GetLastCapSenseReading(byte index);
 
+
 //==================================================================
 // Interrupt routines.
 
@@ -62,6 +71,47 @@ byte CapSenseISR(void);
 
 // Call this at the end of the ISR, after other processing.
 void CapSenseISRDone(void);
+
+//==================================================================
+// Calibration
+
+// Turn this on in CapServe-consts.h to enable the functions below.
+#ifdef CS_AUTO_CALIBRATE
+
+// Call this to start the calibration.
+void CapSenseStartCalibrate(void);
+
+// Call this repeatedly to run the calibration.
+// Stop calling it when it returns false; calibration is done.
+// While calibration is under way, tell the user what state we're in using the variables below.
+byte CapSenseContinueCalibrate(void);
+
+typedef enum {
+	acStart,  // Beginning calibration.  Occurs only briefly.
+	acPressNothing,  // Don't press any buttons now.  Done after start and before end.
+	acPressAndReleaseButton,  // Press and release the button specified in csButton.  
+		// This state is done three times for each button;
+		// recommended pattern of input is a normal press on each button,
+		// then the hardest possible press on each button,
+		// then the lightest press you need to be able to recognize on each button.
+	acDone  // Finished calibration.
+} CSAutoCalibrateState;
+
+CAPSENSE_EXTERN CSAutoCalibrateState csAutoCalibrateState;
+CAPSENSE_EXTERN byte csCalButton;
+
+// Display these results as appropriate when done.
+CAPSENSE_EXTERN CapSenseReading csThresholds[MAX_CAPSENSE_CHANNELS];
+
+typedef enum {
+	acrFail,  // Can't distinguish between this and the neighboring buttons.
+	acrOK,  // Can always tell the hardest button press apart from a neighboring press
+	acrGreat,  // Can tell even the weakest button press apart from a neighboring press
+} CSAutoCalibrateResult;
+CAPSENSE_EXTERN CSAutoCalibrateResult csResults[MAX_CAPSENSE_CHANNELS];
+
+#endif
+// CS_AUTO_CALIBRATE
 
 #endif
 // _CAPSENSE_H
