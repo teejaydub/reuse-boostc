@@ -15,20 +15,7 @@
 #include "CapSense.h"
 #include "CapSense-consts.h"
 
-
-// Sensitivity thresholds:
-// A value that's only this much lower than the "global min" is not yet a button press.
-// Ensures that the system as a whole can drift a bit, slowly, without triggering button
-// presses in the process.
-// Needs to be determined experimentally by viewing the readings returned for each button.
-// These could be 16-bit values, but they're never above 255, so I'm storing them as single bytes.
-// The default sensitivity thresholds are stored in EEPROM.
-#if CAPSENSE_EEPROM_ADDR != 0xF0
- #error "Need to adjust address in data #pragma."
-#endif
-#pragma DATA 0x21F0, 0x3E, 0xEC, 0xEC, 0xE6
-// During init, they're copied to RAM in csThresholds for faster access while scanning.
-
+ 
 CapSenseReading csReadings[MAX_CAPSENSE_CHANNELS];
 
 // The channel currently being timed by the hardware.
@@ -41,10 +28,14 @@ CapSenseReading csGlobalMin[MAX_CAPSENSE_CHANNELS];
 CapSenseReading csMinBin[MAX_CAPSENSE_CHANNELS][NUM_CAPSENSE_MIN_BINS];
 byte csCurrentMinBin;
 
+// This is set if a button was pressed during the current bin - includes held down.
+byte csDownInBin[MAX_CAPSENSE_CHANNELS];
+
 #define TICKS_PER_BIN_CHANGE  2
 byte csLastBinTicks;
 
 byte csLastButtonTicks;
+byte csLastDownPolls;  // Set to zero when any button is down, incremented when no button is down, up to 255.
 
 // Set to one of the channels when that button is down, or NO_CAPSENSE_BUTTONS if none are down.
 // Will often still be down after GetCapSenseButton() has cleared csButton.
@@ -143,10 +134,12 @@ void InitCapSense(void)
 	// this ensures that the mins will decrease when actual readings arrive.)
 	csCurrentMinBin = 0;
 	memset(csMinBin, 0x7F, sizeof(csMinBin)); 
-	memset(csGlobalMin, 0x7F, sizeof(csGlobalMin));
+	memset(csGlobalMin, 0, sizeof(csGlobalMin));  // Set to zero to prevent any presses until we've had time to stabilize.
 	memset(csReadings, 0x7F, sizeof(csReadings));
 	csLastBinTicks = ticks;
+	csLastDownPolls = 0;
 	csHoldingButton = NO_CAPSENSE_BUTTONS;
+	memset(csDownInBin, 0, sizeof(csDownInBin));
 	
 	read_eeprom_block(CAPSENSE_EEPROM_ADDR, (char*) csThresholds, CAPSENSE_EEPROM_LEN);
 
@@ -159,6 +152,11 @@ void InitCapSense(void)
 CapSenseReading GetLastCapSenseReading(byte index)
 {
 	return csReadings[index];
+}
+
+CapSenseReading GetGlobalMin(byte index)
+{
+	return csGlobalMin[index];
 }
 
 byte GetCapSenseButton(void)
@@ -188,29 +186,32 @@ inline void BumpCapSenseMinBin(void)
 	#endif
 	
 	// Find the global min again, over all bins, for all channels.
-	CapSenseReading min1, min2;
-	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
-	min1 = min(csMinBin[0][0], csMinBin[0][1]);
-	min2 = min(csMinBin[0][2], csMinBin[0][3]);
-	csGlobalMin[0] = min(min1, min2);
-	#endif
-	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL1
-	min1 = min(csMinBin[1][0], csMinBin[1][1]);
-	min2 = min(csMinBin[1][2], csMinBin[1][3]);
-	csGlobalMin[1] = min(min1, min2);
-	#endif
-	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2
-	min1 = min(csMinBin[2][0], csMinBin[2][1]);
-	min2 = min(csMinBin[2][2], csMinBin[2][3]);
-	csGlobalMin[2] = min(min1, min2);
-	#endif
-	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3
-	min1 = min(csMinBin[3][0], csMinBin[3][1]);
-	min2 = min(csMinBin[3][2], csMinBin[3][3]);
-	csGlobalMin[3] = min(min1, min2);
-	#endif
+	// But we want to do it only when the system is quiescent.
+	// So: ignore the most-recent bin (in case we're ramping down to a press right now), 
+	// and only do it when none of the other bins had a button press.
+	// To simplify the code, only do it when wrapping around to the first bin.
+	if (csCurrentMinBin == 0 && !csDownInBin[0] && !csDownInBin[1] && !csDownInBin[2] && !csDownInBin[3]) {
+		CapSenseReading min1;
+		#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
+		min1 = min(csMinBin[0][0], csMinBin[0][1]);
+		csGlobalMin[0] = min(min1, csMinBin[0][2]);
+		#endif
+		#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL1
+		min1 = min(csMinBin[1][0], csMinBin[1][1]);
+		csGlobalMin[1] = min(min1, csMinBin[1][3]);
+		#endif
+		#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2
+		min1 = min(csMinBin[2][0], csMinBin[2][1]);
+		csGlobalMin[2] = min(min1, csMinBin[2][3]);
+		#endif
+		#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3
+		min1 = min(csMinBin[3][0], csMinBin[3][1]);
+		csGlobalMin[3] = min(min1, csMinBin[3][3]);
+		#endif
+	}
 
 	csLastBinTicks = ticks;
+	csDownInBin[csCurrentMinBin] = false;
 }
 
 inline void BumpCapSenseChannel(void)
@@ -267,22 +268,31 @@ byte CapSenseISR(void)
 		// Is it a button press?
 		bit isBelowMin = reading < threshold;
 		if (isBelowMin) {
-			if (csButton == NO_CAPSENSE_BUTTONS && csHoldingButton == NO_CAPSENSE_BUTTONS && isBelowMin) 
-			{
+			if (csButton == NO_CAPSENSE_BUTTONS && csHoldingButton == NO_CAPSENSE_BUTTONS
+				&& csLastDownPolls > DEBOUNCE_POLLS  // debounce by number of polls - ~<= 1000/sec.
+			) {
 				// Yes: note it.
 				csButton = currentCapSenseChannel;
 				csLastButtonTicks = ticks;
 				csHoldingButton = currentCapSenseChannel;
 			}
+			
+			csLastDownPolls = 0;
+			csDownInBin[csCurrentMinBin] = true;
 		} else {
 			// If this is the button we were holding, we're not holding it anymore.
 			if (csHoldingButton == currentCapSenseChannel)
 				csHoldingButton = NO_CAPSENSE_BUTTONS;
+				
+			if (csHoldingButton == NO_CAPSENSE_BUTTONS && csLastDownPolls < 255)
+				++csLastDownPolls;
 		}
 	
 		// Update the minima.
-		// But not if a button is currently down... until it's been down for a second.
-		if (!csHoldingButton == NO_CAPSENSE_BUTTONS || (ticks - csLastButtonTicks) > TICKS_PER_SEC
+		// But not if a button is currently or recently down... 
+		if ((csHoldingButton == NO_CAPSENSE_BUTTONS && csLastDownPolls > DEBOUNCE_POLLS)
+			// ... until it's been down for a really long time.
+			|| (ticks - csLastButtonTicks) > 4 * TICKS_PER_SEC
 #ifdef CS_AUTO_CALIBRATE
 			// But DO update the minima during calibration.
 			|| csAutoCalibrateState == acPressAndReleaseButton

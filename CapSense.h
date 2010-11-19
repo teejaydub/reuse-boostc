@@ -55,9 +55,14 @@ void InitCapSense(void);
 byte GetCapSenseButton(void);
 
 
+#ifdef DEBUG
 // Returns the last reading from the given sensor (0-3).
 // (Readings are filtered before they're accessed here.)
 CapSenseReading GetLastCapSenseReading(byte index);
+
+CapSenseReading GetGlobalMin(byte index);
+
+#endif
 
 
 //==================================================================
