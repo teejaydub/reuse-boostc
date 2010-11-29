@@ -39,6 +39,12 @@ typedef signed short CapSenseReading;
 #define MAX_CS_READING  0x7FFF
 
 
+// These are just in the header to facilitate debugging.
+#define NUM_CAPSENSE_MIN_BINS  4
+CAPSENSE_EXTERN CapSenseReading csMinBin[MAX_CAPSENSE_CHANNELS][NUM_CAPSENSE_MIN_BINS];
+CAPSENSE_EXTERN byte csCurrentMinBin;
+
+
 // Initializes the module.
 // The pin assignments are dictated by the peripherals used in this approach.
 // Global interrupts must be enabled soon after this call.
@@ -61,7 +67,6 @@ byte GetCapSenseButton(void);
 CapSenseReading GetLastCapSenseReading(byte index);
 
 CapSenseReading GetGlobalMin(byte index);
-
 #endif
 
 

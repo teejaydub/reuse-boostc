@@ -24,10 +24,6 @@ byte currentCapSenseChannel;
 // The lowest value read on the given channel in the last two seconds.
 CapSenseReading csGlobalMin[MAX_CAPSENSE_CHANNELS];
 
-#define NUM_CAPSENSE_MIN_BINS  4
-CapSenseReading csMinBin[MAX_CAPSENSE_CHANNELS][NUM_CAPSENSE_MIN_BINS];
-byte csCurrentMinBin;
-
 // This is set if a button was pressed during the current bin - includes held down.
 byte csDownInBin[MAX_CAPSENSE_CHANNELS];
 
@@ -261,8 +257,8 @@ byte CapSenseISR(void)
 			threshold = CS_MIN_THRESHOLD;
 		
 		// Filter the new value.
-		// Running average, over 16 samples.
-		reading = *currentReading + (reading - *currentReading) / 16;
+		// Running average, over FILTER_LENGTH samples.
+		reading = *currentReading + (reading - *currentReading) / FILTER_LENGTH;
 		*currentReading = reading;
 
 		// Is it a button press?
@@ -382,17 +378,19 @@ byte CapSenseContinueCalibrate(void)
 		if (ticks - ticksStateStart > SETTLE_TICKS) {
 			// Done waiting.
 			
-			// Store the current mins.
-			// Do it as an accumulate, because we hit this state twice.
-			for (channel = FIRST_CAPSENSE_CHANNEL; channel <= LAST_CAPSENSE_CHANNEL; ++channel)
-				accumulateMin<CapSenseReading>(&minWhileWaiting[channel], csGlobalMin[channel]);
-			
 			// Move to the first button, if this is the first "nothing down" period.
 			if (timesThruButtons == 0)
 				EnterState(acPressAndReleaseButton);
-			else
+			else {
 				// Otherwise, we're done.
+			
+				// Store the current mins.
+				// Do it only on the second pass, because the the first button seems to need a shakeout press.
+				for (channel = FIRST_CAPSENSE_CHANNEL; channel <= LAST_CAPSENSE_CHANNEL; ++channel)
+					accumulateMin<CapSenseReading>(&minWhileWaiting[channel], csGlobalMin[channel]);
+					
 				EnterState(acDone);
+			}
 		}
 		break;
 		
@@ -456,14 +454,17 @@ byte CapSenseContinueCalibrate(void)
 					maxMe = max(maxMe, minPress[csCalButton][i]);
 				}
 				
-				// Report 0 and a Fail status if we can't ever tell the difference between a neighboring button and our own.
+				// Report a Fail status if we can't tell the difference between a neighboring button and our own.
 				if (minOthers < minMe
 					|| minOthers - minMe < 2 * CS_MIN_THRESHOLD
 					|| minWaiting < minMe
 					|| minWaiting - minMe < CS_MIN_THRESHOLD)
 				{ 
-					csThresholds[csCalButton] = 0;
 					csResults[csCalButton] = acrFail;
+					
+					// But, still calculate a threshold based on telling this button's hardest press apart from its release.
+					// The buttons may fight, but at least we can tell when one of them is hit.
+					csThresholds[csCalButton] = minWaiting - minMe - CS_MIN_THRESHOLD;
 				} else {
 					// Otherwise, report the excursion distance from the steady-state "waiting" reading
 					// that will recognize the weakest button press, with a slight margin.
@@ -484,15 +485,21 @@ byte CapSenseContinueCalibrate(void)
 				csThresholds[csCalButton] = 0;
 			}
 			
-//csThresholds[csCalButton] = minWhileWaiting[csCalButton];
-//csThresholds[csCalButton] = minPress[csCalButton][0];
-//csThresholds[csCalButton] = minPress[csCalButton][1];
-//csThresholds[csCalButton] = minPress[csCalButton][2];
-//csThresholds[csCalButton] = minOtherButtons[csCalButton];
+//csCalibrationData[csCalButton] = minWhileWaiting[csCalButton];
+//csCalibrationData[csCalButton] = minPress[csCalButton][0];
+//csCalibrationData[csCalButton] = minPress[csCalButton][1];
+//csCalibrationData[csCalButton] = minPress[csCalButton][2];
+//csCalibrationData[csCalButton] = minOtherButtons[csCalButton];
 		}
 	
 		// Copy results back to EEPROM.
 		write_eeprom_block(CAPSENSE_EEPROM_ADDR, (char*) csThresholds, CAPSENSE_EEPROM_LEN);
+		
+		// Copy intermediate results to the start of EEPROM, so they can be conveniently read out.
+		// Overwrites whatever's there (ASCII table for the display at the moment).
+		write_eeprom_block(0, (char*) minWhileWaiting, sizeof(minWhileWaiting));
+		write_eeprom_block(sizeof(minWhileWaiting), (char*) minOtherButtons, sizeof(minOtherButtons));
+		write_eeprom_block(sizeof(minWhileWaiting) + sizeof(minOtherButtons), (char*) minPress, sizeof(minPress));
 	
 		// Signal when done.
 		return false;
