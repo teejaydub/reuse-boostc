@@ -104,9 +104,7 @@ typedef enum {
 	acPressNothing,  // Don't press any buttons now.  Done after start and before end.
 	acPressAndReleaseButton,  // Press and release the button specified in csButton.  
 		// This state is done three times for each button;
-		// recommended pattern of input is a normal press on each button,
-		// then the hardest possible press on each button,
-		// then the lightest press you need to be able to recognize on each button.
+		// recommended input is a light tap on each button.
 	acDone  // Finished calibration.
 } CSAutoCalibrateState;
 
