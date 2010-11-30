@@ -139,7 +139,7 @@ void InitCapSense(void)
 	memset(csGlobalMin, 0, sizeof(csGlobalMin));  // Set to zero to prevent any presses until we've had time to stabilize.
 	memset(csReadings, 0x7F, sizeof(csReadings));
 	csLastBinTicks = ticks;
-	csLastDownPolls = 0;
+	csLastDownPolls = 255;
 	csHoldingButton = NO_CAPSENSE_BUTTONS;
 	memset(csDownInBin, 0, sizeof(csDownInBin));
 	
