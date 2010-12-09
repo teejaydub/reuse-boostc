@@ -30,6 +30,10 @@
 	
 	Only a single sensor is supported on each bus at the moment -
 	that is, reading is done in "SKIP ROM" (global reply) mode.
+	
+	A requirement inherited from the onewire module:
+	To maintain timing requirements, interrupts are disabled during bus reads and writes,
+	so this module can't coexist with something that requires real-time interrupts.
 */
 
 #include "types-tjw.h"

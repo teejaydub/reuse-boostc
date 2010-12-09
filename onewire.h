@@ -24,6 +24,9 @@
 	Supports up to two busses; the second bus is accessed using the *_2 functions.
 	(This is primarily for coding and testing ease; it would probably be tighter
 	and not significantly slower to parameterize the bus dynamically.)
+	
+	To maintain timing requirements, interrupts are disabled during bus reads and writes,
+	so this module can't coexist with something that requires real-time interrupts.
 */
 
 #include "types-tjw.h"

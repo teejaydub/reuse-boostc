@@ -32,12 +32,6 @@
 #endif
 
 
-// Rolls over every "tick".
-// A tick is 0.262 seconds; there are about 3.8 per second.
-// Driven by Timer 0.
-unsigned char tickScaler;
-
-
 void ResetUITimer(void)
 {
 	tickScaler = 0;
@@ -61,21 +55,6 @@ void InitUiTime_Timer0(void)
 	intcon.PEIE = 1;
 	tickScaler = 0;
 	ticks = 0;
-}
-
-unsigned char UiTimeInterrupt(void)
-{
-	// Timer 0, rolling over with a 1.024 ms period.
-	if (intcon.T0IF) {
-		// Clear the interrupt.
-		intcon.T0IF = 0;
-
-		if (++tickScaler == 0)
-			ticks++;
-
-		return true;
-	} else
-		return false;
 }
 
 void InitUiTime_Timer1(void)

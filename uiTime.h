@@ -57,6 +57,11 @@ void ResetUITimer(void);
 //====================================================================
 // Routines for using Timer 0 or 1 as the time source
 
+// Rolls over every "tick".
+// A tick is 0.262 seconds; there are about 3.8 per second.
+// Driven by Timer 0.
+UITIME_EXTERN unsigned char tickScaler;
+
 // Initializes, and dedicates Timer 0 for use and maintenance by this module.
 // Requires that GIE is enabled elsewhere, and that UiTimeInterrupt is called.
 void InitUiTime_Timer0(void);
@@ -74,7 +79,20 @@ void InitUiTime_Timer1(void);
 //		if (UiTimeInterrupt())
 //			CheckButtons();
 //	}
-unsigned char UiTimeInterrupt(void);
+inline unsigned char UiTimeInterrupt(void)
+{
+	// Timer 0, rolling over with a 1.024 ms period.
+	if (intcon.T0IF) {
+		// Clear the interrupt.
+		intcon.T0IF = 0;
+
+		if (++tickScaler == 0)
+			ticks++;
+
+		return true;
+	} else
+		return false;
+}
 
 // Call this in your interrupt handler if using Timer 1.
 void UiTimeInterrupt1(void);
