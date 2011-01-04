@@ -40,7 +40,7 @@ typedef signed short CapSenseReading;
 
 
 // These are just in the header to facilitate debugging.
-#define NUM_CAPSENSE_MIN_BINS  4
+#define NUM_CAPSENSE_MIN_BINS  2
 CAPSENSE_EXTERN CapSenseReading csMinBin[MAX_CAPSENSE_CHANNELS][NUM_CAPSENSE_MIN_BINS];
 CAPSENSE_EXTERN byte csCurrentMinBin;
 

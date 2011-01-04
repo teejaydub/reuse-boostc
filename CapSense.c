@@ -33,7 +33,7 @@ CapSenseReading csMinHolding[MAX_CAPSENSE_CHANNELS];
 // This is set if a button was pressed during the current bin - includes held down.
 byte csDownInBin[MAX_CAPSENSE_CHANNELS];
 
-#define TICKS_PER_BIN_CHANGE  2
+#define TICKS_PER_BIN_CHANGE  1
 byte csLastBinTicks;
 
 byte csLastButtonTicks;
@@ -173,6 +173,21 @@ inline void BumpCapSenseMinBin(void)
 	if (++csCurrentMinBin >= NUM_CAPSENSE_MIN_BINS)
 		csCurrentMinBin = 0;
 	
+	// Find the global min again, over all bins, for all channels.
+	CapSenseReading min1;
+	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
+	csGlobalMin[0] = min(csMinBin[0][0], csMinBin[0][1]);
+	#endif
+	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL1
+	csGlobalMin[1] = min(csMinBin[1][0], csMinBin[1][1]);
+	#endif
+	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2
+	csGlobalMin[2] = min(csMinBin[2][0], csMinBin[2][1]);
+	#endif
+	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3
+	csGlobalMin[3] = min(csMinBin[3][0], csMinBin[3][1]);
+	#endif
+
 	// Reset each channel's newly-current bin to contain just that channel's most-recent reading.
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
 	csMinBin[0][csCurrentMinBin] = csReadings[0];
@@ -187,32 +202,6 @@ inline void BumpCapSenseMinBin(void)
 	csMinBin[3][csCurrentMinBin] = csReadings[3];
 	#endif
 	
-	// Find the global min again, over all bins, for all channels.
-	// But we want to do it only when the system is quiescent.
-	// So: ignore the current and most-recent bins (in case we're ramping down to a press right now), 
-	// and only do it when none of the bins had a button press.
-	// To simplify the code, only do it when wrapping around to the first bin.
-	// So, bin 3 is the most-recent, and we're only looking at bins 1 and 2.
-	if (csCurrentMinBin == 0 && !csDownInBin[0] && !csDownInBin[1] && !csDownInBin[2] && !csDownInBin[3]) {
-		CapSenseReading min1;
-		#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
-		min1 = min(csMinBin[0][0], csMinBin[0][1]);
-		csGlobalMin[0] = min(min1, csMinBin[0][2]);
-		#endif
-		#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL1
-		min1 = min(csMinBin[1][0], csMinBin[1][1]);
-		csGlobalMin[1] = min(min1, csMinBin[1][2]);
-		#endif
-		#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2
-		min1 = min(csMinBin[2][0], csMinBin[2][1]);
-		csGlobalMin[2] = min(min1, csMinBin[2][2]);
-		#endif
-		#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3
-		min1 = min(csMinBin[3][0], csMinBin[3][1]);
-		csGlobalMin[3] = min(min1, csMinBin[3][2]);
-		#endif
-	}
-
 	csLastBinTicks = ticks;
 	csDownInBin[csCurrentMinBin] = false;
 }
@@ -298,7 +287,7 @@ byte CapSenseISR(void)
 		CapSenseReading* currentMin;
 		if ((csHoldingButton == NO_CAPSENSE_BUTTONS && csLastDownPolls > DEBOUNCE_POLLS)
 			// ... until it's been down for a really long time.
-			|| (ticks - csLastButtonTicks) > 4 * TICKS_PER_SEC
+			|| (ticks - csLastButtonTicks) >= 0 * TICKS_PER_SEC
 		) {
 			currentMin = &csMinBin[currentCapSenseChannel][csCurrentMinBin];
 			if (reading < *currentMin)
