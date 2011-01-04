@@ -52,6 +52,21 @@ void SetADChannel(byte channel)
 	adcon1 = 0;  // Ref = Vss to Vdd, left-justified.
 }
 
+void TurnOffADChannel(byte channel)
+{
+#ifdef MORE_THAN_8_CHANNELS
+	if (channel > 7) {
+		anselh &= ~(BITMASK(channel - 8));
+	} else {
+#endif
+		ansel &= ~(BITMASK(channel));
+#ifdef MORE_THAN_8_CHANNELS
+	}
+#endif
+	
+	adcon0 = (adcon0 & 0b11000000) | (channel << 2);  // and right-justified, !ADON, !GO, keep the existing clock.
+}
+
 // Blocks the required settling time, starts a conversion, and waits for it to finish.
 // Assumes the A/D channel has already been set up and selected.
 // The result will be in adresh/adresl.

@@ -40,6 +40,9 @@ inline void InitADClock(byte adcClock)
 // Also requires that the corresponding TRIS register bit be set.
 void SetADChannel(byte channel);
 
+// Sets the specified A/D channel back to "digital" mode.
+void TurnOffADChannel(byte channel);
+
 // Waits the required settling time, starts a conversion, and waits for it to finish.
 // Assumes the A/D channel has already been set up and selected.
 // The result will be in adresh/adresl.
