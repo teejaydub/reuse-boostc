@@ -38,19 +38,18 @@ void SetADChannel(byte channel)
 {
 #ifdef MORE_THAN_8_CHANNELS
 	if (channel > 7) {
-		ansel = 0;
-		anselh = BITMASK(channel - 8);
+		anselh |= BITMASK(channel - 8);
 	} else {
 #endif
-		ansel = BITMASK(channel);
+		ansel |= BITMASK(channel);
 #ifdef MORE_THAN_8_CHANNELS
-		anselh = 0;
 	}
 #endif
 	
 	pir1.ADIF = 0;
 	
-	adcon0 = channel << 2;  // and right-justified, Ref = Vdd, !ADON, !GO.
+	adcon0 = (adcon0 & 0b11000000) | (channel << 2);  // and right-justified, !ADON, !GO, keep the existing clock.
+	adcon1 = 0;  // Ref = Vss to Vdd, left-justified.
 }
 
 // Blocks the required settling time, starts a conversion, and waits for it to finish.

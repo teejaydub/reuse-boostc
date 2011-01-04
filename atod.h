@@ -33,7 +33,7 @@
 #define ADC_CLOCK_RC  0b11000000
 inline void InitADClock(byte adcClock)
 {
-	adcon0 |= (adcClock & 0b11000000);
+	adcon0 = (adcon0 & 0b00111111) | adcClock;
 }
 
 // Select the given A/D channel.

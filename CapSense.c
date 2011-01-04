@@ -255,6 +255,7 @@ byte CapSenseISR(void)
 		CapSenseReading* currentReading = &csReadings[currentCapSenseChannel];
 		
 		// Compute the "pressed" threshold.
+		// threshold = the threshold constant - sensitivity, but bracketed at the minimum threshold.
 		CapSenseReading threshold = *currentGlobalMin;
 		byte sensitivity = csThresholds[currentCapSenseChannel];
 		if (threshold > sensitivity) {
@@ -271,18 +272,19 @@ byte CapSenseISR(void)
 		// Is it a button press?
 		bit isBelowMin = reading < threshold;
 		if (isBelowMin) {
+			// Yes, it's "down."
 			if (csButton == NO_CAPSENSE_BUTTONS && csHoldingButton == NO_CAPSENSE_BUTTONS
 				&& csLastDownPolls > DEBOUNCE_POLLS  // debounce by number of polls - ~<= 1000/sec.
 			) {
-				// Yes: note it.
+				// And this is the falling edge: note it.
 				csButton = currentCapSenseChannel;
 				csLastButtonTicks = ticks;
 				csHoldingButton = currentCapSenseChannel;
+				csLastDownPolls = 0;
+				csDownInBin[csCurrentMinBin] = true;
 			}
-			
-			csLastDownPolls = 0;
-			csDownInBin[csCurrentMinBin] = true;
 		} else {
+			// No, it's not "down".
 			// If this is the button we were holding, we're not holding it anymore.
 			if (csHoldingButton == currentCapSenseChannel)
 				csHoldingButton = NO_CAPSENSE_BUTTONS;
@@ -292,7 +294,7 @@ byte CapSenseISR(void)
 		}
 	
 		// Update the minima.
-		// But not if a button is currently or recently down... 
+		// But not if this button is down... 
 		CapSenseReading* currentMin;
 		if ((csHoldingButton == NO_CAPSENSE_BUTTONS && csLastDownPolls > DEBOUNCE_POLLS)
 			// ... until it's been down for a really long time.
@@ -383,7 +385,7 @@ byte CapSenseContinueCalibrate(void)
 		InitReadingArray(minWhileWaiting, MAX_CAPSENSE_CHANNELS, MAX_CS_READING);
 		InitReadingArray(minPress, MAX_CAPSENSE_CHANNELS * TIMES_THRU_BUTTONS, MAX_CS_READING);
 		InitReadingArray(minOtherButtons, MAX_CAPSENSE_CHANNELS, MAX_CS_READING);
-  	InitReadingArray(csMinHolding, MAX_CAPSENSE_CHANNELS, MAX_CS_READING);
+		InitReadingArray(csMinHolding, MAX_CAPSENSE_CHANNELS, MAX_CS_READING);
 		EnterState(acPressNothing);
 		break;
 		
