@@ -408,7 +408,7 @@ byte CapSenseContinueCalibrate(void)
 				accumulator = &minOtherButtons[csCalButton];
 
 			// Get it from the min bin, which already contains a min of many recent readings.
-			accumulateMin<CapSenseReading>(accumulator, csMinBin[channel][csCurrentMinBin]);
+			accumulateMin<CapSenseReading>(accumulator, csBin[channel][csCurrentBin]);
 			
 			// Also check the holding bin for this button - it'll be updated while the button is down,
 			// and will likely contain the important reading for crosstalk from the pressed button.
@@ -446,7 +446,7 @@ byte CapSenseContinueCalibrate(void)
 		// Finish computing the thresholds.
 		for (csCalButton = FIRST_CAPSENSE_CHANNEL; csCalButton <= LAST_CAPSENSE_CHANNEL; ++csCalButton) {
 			if (IsChannelUsed(csCalButton)) {
-				// Find the minimum quiescent reading on this channel.
+				// Find the minimum baseline observed on this channel.
 				CapSenseReading minWaiting = minWhileWaiting[csCalButton];
 			
 				// Find the minimum reading during *other* buttons' presses.
@@ -491,12 +491,6 @@ byte CapSenseContinueCalibrate(void)
 				csResults[csCalButton] = acrFail;
 				csThresholds[csCalButton] = 0;
 			}
-			
-//csCalibrationData[csCalButton] = minWhileWaiting[csCalButton];
-//csCalibrationData[csCalButton] = minPress[csCalButton][0];
-//csCalibrationData[csCalButton] = minPress[csCalButton][1];
-//csCalibrationData[csCalButton] = minPress[csCalButton][2];
-//csCalibrationData[csCalButton] = minOtherButtons[csCalButton];
 		}
 	
 		// Copy results back to EEPROM.
