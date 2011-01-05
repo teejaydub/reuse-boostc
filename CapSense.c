@@ -21,13 +21,13 @@ CapSenseReading csReadings[MAX_CAPSENSE_CHANNELS];
 // The channel currently being timed by the hardware.
 byte currentCapSenseChannel;
 
-// The lowest value read on the given channel in the last two seconds.
-CapSenseReading csGlobalMin[MAX_CAPSENSE_CHANNELS];
+// The baseline value from which we expect low-going excursions when a finger approaches.
+CapSenseReading csBaseline[MAX_CAPSENSE_CHANNELS];
 
 #ifdef CS_AUTO_CALIBRATE
-// The minimum value seen while the button is considered to be pressed.
+// The maximum value seen while the button is considered to be pressed.
 // Kept here during calibration; cleared by the calibration code.
-CapSenseReading csMinHolding[MAX_CAPSENSE_CHANNELS];
+CapSenseReading csMaxHolding[MAX_CAPSENSE_CHANNELS];
 #endif
 
 // This is set if a button was pressed during the current bin - includes held down.
@@ -132,12 +132,10 @@ void InitCapSense(void)
 	InitUiTime_Timer0();
 	
 	// Clear all bins.
-	// (Actually uses 0x7F7F, which is almost the highest number available, for convenience;
-	// this ensures that the mins will decrease when actual readings arrive.)
-	csCurrentMinBin = 0;
-	memset(csMinBin, 0x7F, sizeof(csMinBin)); 
-	memset(csGlobalMin, 0, sizeof(csGlobalMin));  // Set to zero to prevent any presses until we've had time to stabilize.
-	memset(csReadings, 0x7F, sizeof(csReadings));
+	csCurrentBin = 0;
+	memset(csBin, 0, sizeof(csBin)); 
+	memset(csBaseline, 0, sizeof(csBaseline));  // Set to zero to prevent any presses until we've had time to stabilize.
+	memset(csReadings, 0, sizeof(csReadings));
 	csLastBinTicks = ticks;
 	csLastDownPolls = 255;
 	csHoldingButton = NO_CAPSENSE_BUTTONS;
@@ -156,9 +154,9 @@ CapSenseReading GetLastCapSenseReading(byte index)
 	return csReadings[index];
 }
 
-CapSenseReading GetGlobalMin(byte index)
+CapSenseReading GetBaseline(byte index)
 {
-	return csGlobalMin[index];
+	return csBaseline[index];
 }
 
 byte GetCapSenseButton(void)
@@ -168,42 +166,41 @@ byte GetCapSenseButton(void)
 	return result;
 }
 
-inline void BumpCapSenseMinBin(void)
+inline void BumpCapSenseBin(void)
 {
-	if (++csCurrentMinBin >= NUM_CAPSENSE_MIN_BINS)
-		csCurrentMinBin = 0;
+	if (++csCurrentBin >= NUM_CAPSENSE_BINS)
+		csCurrentBin = 0;
 	
 	// Find the global min again, over all bins, for all channels.
-	CapSenseReading min1;
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
-	csGlobalMin[0] = min(csMinBin[0][0], csMinBin[0][1]);
+	csBaseline[0] = max(csBin[0][0], csBin[0][1]);
 	#endif
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL1
-	csGlobalMin[1] = min(csMinBin[1][0], csMinBin[1][1]);
+	csBaseline[1] = max(csBin[1][0], csBin[1][1]);
 	#endif
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2
-	csGlobalMin[2] = min(csMinBin[2][0], csMinBin[2][1]);
+	csBaseline[2] = max(csBin[2][0], csBin[2][1]);
 	#endif
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3
-	csGlobalMin[3] = min(csMinBin[3][0], csMinBin[3][1]);
+	csBaseline[3] = max(csBin[3][0], csBin[3][1]);
 	#endif
 
 	// Reset each channel's newly-current bin to contain just that channel's most-recent reading.
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
-	csMinBin[0][csCurrentMinBin] = csReadings[0];
+	csBin[0][csCurrentBin] = csReadings[0];
 	#endif
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL1
-	csMinBin[1][csCurrentMinBin] = csReadings[1];
+	csBin[1][csCurrentBin] = csReadings[1];
 	#endif
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2
-	csMinBin[2][csCurrentMinBin] = csReadings[2];
+	csBin[2][csCurrentBin] = csReadings[2];
 	#endif
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3
-	csMinBin[3][csCurrentMinBin] = csReadings[3];
+	csBin[3][csCurrentBin] = csReadings[3];
 	#endif
 	
 	csLastBinTicks = ticks;
-	csDownInBin[csCurrentMinBin] = false;
+	csDownInBin[csCurrentBin] = false;
 }
 
 inline void BumpCapSenseChannel(void)
@@ -240,12 +237,12 @@ byte CapSenseISR(void)
 		CapSenseReading reading = (tmr1h << 8) | tmr1l;
 		
 		// Do some of the indexing once.
-		CapSenseReading* currentGlobalMin = &csGlobalMin[currentCapSenseChannel];
+		CapSenseReading* currentBaseline = &csBaseline[currentCapSenseChannel];
 		CapSenseReading* currentReading = &csReadings[currentCapSenseChannel];
 		
 		// Compute the "pressed" threshold.
 		// threshold = the threshold constant - sensitivity, but bracketed at the minimum threshold.
-		CapSenseReading threshold = *currentGlobalMin;
+		CapSenseReading threshold = *currentBaseline;
 		byte sensitivity = csThresholds[currentCapSenseChannel];
 		if (threshold > sensitivity) {
 			threshold -= sensitivity;
@@ -270,7 +267,7 @@ byte CapSenseISR(void)
 				csLastButtonTicks = ticks;
 				csHoldingButton = currentCapSenseChannel;
 				csLastDownPolls = 0;
-				csDownInBin[csCurrentMinBin] = true;
+				csDownInBin[csCurrentBin] = true;
 			}
 		} else {
 			// No, it's not "down".
@@ -282,29 +279,29 @@ byte CapSenseISR(void)
 				++csLastDownPolls;
 		}
 	
-		// Update the minima.
+		// Update the current bin's extreme.
 		// But not if this button is down... 
-		CapSenseReading* currentMin;
+		CapSenseReading* currentMax;
 		if ((csHoldingButton == NO_CAPSENSE_BUTTONS && csLastDownPolls > DEBOUNCE_POLLS)
 			// ... until it's been down for a really long time.
 			|| (ticks - csLastButtonTicks) >= 0 * TICKS_PER_SEC
 		) {
-			currentMin = &csMinBin[currentCapSenseChannel][csCurrentMinBin];
-			if (reading < *currentMin)
-				*currentMin = reading;
+			currentMax = &csBin[currentCapSenseChannel][csCurrentBin];
+			if (reading > *currentMax)
+				*currentMax = reading;
 		} 
 #ifdef CS_AUTO_CALIBRATE
 		// During calibration, keep track of the minima seperately.
 		else if (csAutoCalibrateState == acPressAndReleaseButton) {
-			currentMin = &csMinHolding[currentCapSenseChannel];
-			if (reading < *currentMin)
-				*currentMin = reading;
+			currentMax = &csMaxHolding[currentCapSenseChannel];
+			if (reading > *currentMax)
+				*currentMax = reading;
 		}
 #endif		
 		
 		// Move to the next min bin, every other tick (about twice a second).
 		if (ticks - csLastBinTicks >= TICKS_PER_BIN_CHANGE)
-			BumpCapSenseMinBin();
+			BumpCapSenseBin();
 	
 		// Move to the next sensor.
 		BumpCapSenseChannel();
@@ -391,7 +388,7 @@ byte CapSenseContinueCalibrate(void)
 				// Store the current mins.
 				// Do it only on the second pass, because the the first button seems to need a shakeout press.
 				for (channel = FIRST_CAPSENSE_CHANNEL; channel <= LAST_CAPSENSE_CHANNEL; ++channel)
-					accumulateMin<CapSenseReading>(&minWhileWaiting[channel], csGlobalMin[channel]);
+					accumulateMin<CapSenseReading>(&minWhileWaiting[channel], csBaseline[channel]);
 					
 				EnterState(acDone);
 			}

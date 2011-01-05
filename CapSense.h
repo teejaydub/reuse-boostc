@@ -40,9 +40,9 @@ typedef signed short CapSenseReading;
 
 
 // These are just in the header to facilitate debugging.
-#define NUM_CAPSENSE_MIN_BINS  2
-CAPSENSE_EXTERN CapSenseReading csMinBin[MAX_CAPSENSE_CHANNELS][NUM_CAPSENSE_MIN_BINS];
-CAPSENSE_EXTERN byte csCurrentMinBin;
+#define NUM_CAPSENSE_BINS  2
+CAPSENSE_EXTERN CapSenseReading csBin[MAX_CAPSENSE_CHANNELS][NUM_CAPSENSE_BINS];
+CAPSENSE_EXTERN byte csCurrentBin;
 
 
 // Initializes the module.
@@ -66,7 +66,7 @@ byte GetCapSenseButton(void);
 // (Readings are filtered before they're accessed here.)
 CapSenseReading GetLastCapSenseReading(byte index);
 
-CapSenseReading GetGlobalMin(byte index);
+CapSenseReading GetBaseline(byte index);
 #endif
 
 
