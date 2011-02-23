@@ -256,8 +256,7 @@ byte CapSenseISR(void)
 		*currentReading = reading;
 
 		// Is it a button press?
-		bit isBelowMin = reading < threshold;
-		if (isBelowMin) {
+		if (reading < threshold) {
 			// Yes, it's "down."
 			if (csButton == NO_CAPSENSE_BUTTONS && csHoldingButton == NO_CAPSENSE_BUTTONS
 				&& csLastDownPolls > DEBOUNCE_POLLS  // debounce by number of polls - ~<= 1000/sec.
