@@ -67,6 +67,8 @@ inline fixed16 fixedFracFromByte(char b)
 // This version is more efficient.
 #define FIXED_FRAC_FROM_BYTE(b)  (b)
 
+#define FIXED_ONE_HALF  0x80
+
 inline fixed16 makeFixed(char integral, unsigned char fractional)
 {
 	return (((fixed16) integral) << 8) | ((fixed16) fractional);
@@ -118,7 +120,7 @@ inline unsigned char fixedTenths(fixed16 f)
 	fixed16 tempFixed;
 	tempFixed = fixedFrac(f);  // Just the fractional part, positive.
 	tempFixed *= 10;  // Convert to tenths.
-	tempFixed += FIXED_FRAC_FROM_BYTE(0x0D);  // Round to the nearest tenth by adding 0.05.
+	tempFixed += FIXED_ONE_HALF;  // Round to the nearest tenth by adding 0.5 (of a tenth).
 	
 	return FIXED_INTEGRAL(tempFixed);  // Truncate and return.
 }
@@ -150,7 +152,7 @@ inline char fixedHasFrac(fixed16 f)
 // Assumes f >= 0!
 inline signed char fixedRoundToByte(fixed16 f)
 {
-	return (signed char)((f + 0x0080) >> 8);
+	return (signed char)((f + FIXED_ONE_HALF) >> 8);
 }
 		
 // Return 1/f.
