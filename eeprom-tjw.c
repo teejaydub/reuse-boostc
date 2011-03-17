@@ -44,6 +44,7 @@ char read_eeprom(char addr)
 
 void write_eeprom(char addr, char data)
 {        //---- Write eeprom -----
+	clear_bit(pir2, EEIF);  // Clear any existing interrupt flags.  It'll get set again when this write is done.
 	#if defined(_PIC18F2620) || defined(_PIC16F886)
 	clear_bit(eecon1, EEPGD);
 	#endif
@@ -81,3 +82,20 @@ void write_eeprom_block(char addr, char* buf, unsigned char len)
 		write_eeprom(addr++, *buf++);
 }
 
+void inc_eeprom_counter_long(char addr)
+{
+	unsigned long count;
+	read_eeprom_block(addr, (char*) &count, sizeof(count));
+	if (count != 0xFFFFFFFF) {
+		++count;
+		write_eeprom_block(addr, (char*) &count, sizeof(count));
+	}
+}
+
+void accum_max_eeprom_byte(char addr, unsigned char value)
+{
+	unsigned char oldValue;
+	oldValue = read_eeprom(addr);
+	if (value > oldValue)
+		write_eeprom(addr, value);
+}
