@@ -43,7 +43,8 @@
 		The result is fixed-point.
 		
 	- Similarly, you can divide a fixed-point by a plain integer directly
-		to get a fixed-point result.
+		to get a fixed-point result.  (The numerator must be fixed,
+		and the denominator must be the plain integer.)
 */
 
 #ifndef __FIXED16_H

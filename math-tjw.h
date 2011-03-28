@@ -39,5 +39,18 @@ void accumulateMax(T* accumulator, T newValue)
 	*accumulator = max(*accumulator, newValue);
 }
 
+// Average two unsigned values efficiently, without overflow.
+template <class T>
+T averageUnsigned(T a, T b)
+{
+	T result = a >> 1;
+	result += b >> 1;
+	
+	if ((a & 1) != 0 || (b & 1) != 0)
+		++result;
+		
+	return result;
+}
+
 #endif
 // __MATH_TJW_H
