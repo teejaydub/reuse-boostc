@@ -1,5 +1,5 @@
 /* chipinit.h
-    Copyright (c) 2007 by Timothy J. Weber, tw@timothyweber.org.
+    Copyright (c) 2007-2011 by Timothy J. Weber, tw@timothyweber.org.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -32,12 +32,13 @@
 	PIC16F690
 	PIC16F916
 	PIC18F2320
+	PIC18F2550
 	PIC18F2620
 */
 
 #if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683) 
 #elif defined(_PIC18F2320) || defined(_PIC18F2620) || defined(_PIC16F690) || defined(_PIC16F886)
-#elif defined(_PIC18F1320)
+#elif defined(_PIC18F1320) || defined(_PIC18F2550)
 	// New chips supported must be listed here.
 #else
 	#error "chipinit.h: Chip not recognized; check code and add this chip's required settings"
@@ -50,7 +51,7 @@
 inline void DisablePeripherals(void)
 {
 	// Disable comparators.
-	#if defined(_PIC12F629) || defined(_PIC12F675) || defined(_PIC18F2620)
+	#if defined(_PIC12F629) || defined(_PIC12F675) || defined(_PIC18F2620) || defined(_PIC18F2550)
 		cmcon = 7;
 	#endif
 	
@@ -73,7 +74,7 @@ inline void DisablePeripherals(void)
 		anselh = 0;
 	#endif
 
-	#if defined(_PIC18F2320) || defined(_PIC18F2620) || defined(_PIC18F1320)
+	#if defined(_PIC18F2320) || defined(_PIC18F2620) || defined(_PIC18F1320) || defined(_PIC18F2550)
 		adcon1 = 0x0F;  // all digital inputs	
 	#endif
 	
