@@ -1,5 +1,5 @@
 /* eeprom-tjw.c
-    Copyright (c) 2007 by Timothy J. Weber, tw@timothyweber.org.
+    Copyright (c) 2007-20011 by Timothy J. Weber, tw@timothyweber.org.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -30,11 +30,13 @@
 
 char read_eeprom(char addr)
 {
-	#if defined(_PIC18F2620) || defined(_PIC16F886)
+	#if defined(_PIC18F2620) || defined(_PIC18F2550) || defined(_PIC16F886)
 	clear_bit(eecon1, EEPGD);
 	#endif
-	#if defined(_PIC18F2620)
+	#if defined(_PIC18F2620) || defined(_PIC18F2550)
 	clear_bit(eecon1, CFGS);
+	#endif
+	#if defined(_PIC18F2620)
 	eeadrh = 0;
 	#endif
 	eeadr = addr;
@@ -45,10 +47,10 @@ char read_eeprom(char addr)
 void write_eeprom(char addr, char data)
 {        //---- Write eeprom -----
 	clear_bit(pir2, EEIF);  // Clear any existing interrupt flags.  It'll get set again when this write is done.
-	#if defined(_PIC18F2620) || defined(_PIC16F886)
+	#if defined(_PIC18F2620) || defined(_PIC18F2550) || defined(_PIC16F886)
 	clear_bit(eecon1, EEPGD);
 	#endif
-	#ifdef _PIC18F2620
+	#ifdef _PIC18F2620 || defined(_PIC18F2550)
 	clear_bit(eecon1, CFGS);
 	eeadrh = 0;
 	#endif
