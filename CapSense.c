@@ -280,10 +280,18 @@ byte CapSenseISR(void)
 		}
 	
 		// Update the current bin's extreme.
-		// But not if this button is down.
+		// But not if this button is down... 
 		CapSenseReading* currentMax;
-		if (csHoldingButton == NO_CAPSENSE_BUTTONS && csLastDownPolls > DEBOUNCE_POLLS)
-			accumulateMax<CapSenseReading>(&csBin[currentCapSenseChannel][csCurrentBin], reading);
+		if ((csHoldingButton == NO_CAPSENSE_BUTTONS && csLastDownPolls > DEBOUNCE_POLLS)
+			// ... until it's been down for a really long time.
+			|| (ticks - csLastButtonTicks) >= 0 * TICKS_PER_SEC
+		) {
+			//accumulateMax<CapSenseReading>(&csBin[currentCapSenseChannel][csCurrentBin], reading);
+			// That works, but the resulting function call uses one too many stack levels.
+			currentMax = &csBin[currentCapSenseChannel][csCurrentBin];
+			if (reading > *currentMax)
+				*currentMax = reading;
+		}
 #ifdef CS_AUTO_CALIBRATE
 		// During calibration, keep track of the minima as well.
 		if (csAutoCalibrateState == acPressAndReleaseButton)
