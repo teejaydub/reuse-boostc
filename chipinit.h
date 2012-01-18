@@ -37,7 +37,7 @@
 */
 
 #if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683) 
-#elif defined(_PIC18F2320) || defined(_PIC18F2620) || defined(_PIC16F690) || defined(_PIC16F886)
+#elif defined(_PIC18F2320) || defined(_PIC18F2620) || defined(_PIC16F690) || defined(_PIC16F883) || defined(_PIC16F886)
 #elif defined(_PIC18F1320) || defined(_PIC18F2550)
 	// New chips supported must be listed here.
 #else

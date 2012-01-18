@@ -23,7 +23,7 @@
 
 
 // Compatibility defines for 18F series.
-#if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683) || defined(_PIC16F886) || defined(_PIC18F2550)
+#if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683) || defined(_PIC16F883) || defined(_PIC16F886) || defined(_PIC18F2550)
 	// These use the default T0IF.
 #elif defined(_PIC18F2620) || defined(_PIC18F2320) || defined(_PIC18F1320)
 	#define T0IF  TMR0IF
@@ -40,7 +40,7 @@ void ResetUITimer(void)
 
 void InitUiTime_Timer0(void)
 {
-	#if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683) || defined(_PIC16F886)
+	#if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683) || defined(_PIC16F883) || defined(_PIC16F886)
 	option_reg.T0CS = 0;  // T0 transition on internal CLKOUT
 	option_reg = (option_reg & 0xF0) | 0x01;  // 1:4 prescaler on Timer 0: rolls over with a period of 1.024 ms.
 	intcon.T0IE = 1;
