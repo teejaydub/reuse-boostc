@@ -95,6 +95,21 @@ void UiTimeUpdate60(void)
 	}
 }
 
+unsigned char  tickScaleVal;
+void InitUiTime_Freq(unsigned char  NBy4)
+{
+	tickScaleVal = NBy4;
+	ResetUITimer();
+}
+
+void UiTimeUpdateFreq(void)
+{
+	if (++tickScaler >= tickScaleVal) {
+		tickScaler = 0;
+		ticks++;
+	}
+}
+
 void InitUiTime256(void)
 {
 	ResetUITimer();

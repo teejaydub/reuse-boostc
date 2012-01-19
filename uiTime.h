@@ -109,6 +109,19 @@ void UiTimeUpdate60(void);
 
 
 //====================================================================
+// Routines for using an external time source that updates at any given frequency.
+
+// Call this once to initialize.
+// For NBy4, pass the update frequency in Hz divided by 4.
+// You'll then get 4 ticks per second.
+// In other words, pass the frequency of updates in updates per tick.
+void InitUiTime_Freq(unsigned char NBy4);
+
+// Call this at the specified frequency to update.
+void UiTimeUpdateFreq(void);
+
+
+//====================================================================
 // Routines for using a 256-cycle timer like Timer 0 as a time source,
 // but managed elsewhere.
 
