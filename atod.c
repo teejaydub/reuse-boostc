@@ -1,5 +1,5 @@
 /* atod.c
-    Copyright (c) 2009 by Timothy J. Weber, tw@timothyweber.org.
+    Copyright (c) 2009-2012 by Timothy J. Weber, tw@timothyweber.org.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 
 #if defined(_PIC16F886)
  #define MORE_THAN_8_CHANNELS
-#elif defined(_PIC16F688) || defined(_PIC16F916) || defined(PIC12F683)
+#elif defined(_PIC16F688) || defined(_PIC16F916) || defined(_PIC12F683)
 #else
  #error "Need to define how many channels this PIC has."
 #endif
@@ -38,18 +38,24 @@ void SetADChannel(byte channel)
 {
 #ifdef MORE_THAN_8_CHANNELS
 	if (channel > 7) {
-		anselh |= BITMASK(channel - 8);
+		anselh = BITMASK(channel - 8);
 	} else {
 #endif
-		ansel |= BITMASK(channel);
+#ifdef _PIC12F683
+		ansel = (ansel & 0x01110000) | BITMASK(channel);  // preserve the clock select bits, which are stored here
+#else
+		ansel = BITMASK(channel);
+#endif
 #ifdef MORE_THAN_8_CHANNELS
 	}
 #endif
 	
 	pir1.ADIF = 0;
 	
-	adcon0 = (adcon0 & 0b11000000) | (channel << 2);  // and right-justified, !ADON, !GO, keep the existing clock.
-	adcon1 = 0;  // Ref = Vss to Vdd, left-justified.
+	adcon0 = (adcon0 & 0b11000000) | (channel << 2);  // keep current justification and reference (or clock for 16F886), !ADON, !GO.
+#ifdef _PIC16F886
+	adcon1 = (adcon1 & 0b10000000);  // Ref = Vss to Vdd, preserve justification.
+#endif
 }
 
 void TurnOffADChannel(byte channel)
