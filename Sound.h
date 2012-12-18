@@ -55,9 +55,11 @@ void PlayClick(void);
 // The default duration is an eighth note at 120 bpm.
 // Duration is changed for subsequent notes using '8', '4', '2', and '1'
 // for eighth, quarter, half, and whole notes (4/4), or '6' for sixteenths or '3' for thirty-seconds.
+// A dot after the duration signifies a dotted note, and is reset for the next note automatically.
 // Accidentals can be prefixed as '+' for sharp and '-' for flat,
 // and affect only the following note.
 // A space (' ') signifies a rest, and uses the current duration.
+// Default is staccato; can be changed with '_' for legato and '^' for detached, which persist.
 void PlaySong(const char* song);
 
 #endif

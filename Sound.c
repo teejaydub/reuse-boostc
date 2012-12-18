@@ -17,6 +17,8 @@
 
 #include <system.h>
 
+#include <string.h>
+
 #include "Sound.h"
 #include "SoundConsts.h"
 
@@ -28,8 +30,15 @@ byte soundTimeoutLow;
 unsigned short remainingDuration = 0;  // of the current sound, in milliseconds
 unsigned short followingSilence = 0;  // duration of silence to follow the current sound, or 0 if none
 
-const char* currentSong = 0;
+#define MAX_SONG_LENGTH  60
+char currentSong[MAX_SONG_LENGTH + 1];
+byte currentSongIndex = 0;
 byte millisElapsed = 0;
+
+// For interpreting song strings.
+unsigned short noteTimeMs;
+byte detachment;  // out of 5, where 5/5 = legato, and usually 4/5 = staccato.
+
 
 inline void TurnSoundOff(void)
 {
@@ -39,34 +48,9 @@ inline void TurnSoundOff(void)
 	tmr1h = 0;
 	tmr1l = 0;
 	SET_SHADOW_BIT(SOUND_PORT, SOUND_SHADOW, SOUND_PIN, 0);
-	remainingDuration = 0;
-	followingSilence = 0;
-	currentSong = 0;
-	millisElapsed = 0;
 }
 
 void StartSound(unsigned short periodUs)
-{
-	// Prepare the port.
-	SOUND_TRIS.SOUND_PIN = 0;
-  
-	if (periodUs) {
-		// Set up the timer
-		t1con = 0x01;  // prescale 1:1 on 16-bit counter @ 1 MHz.
-		intcon.PEIE = 1;
-		pie1.TMR1IE = 1;
-		
-		// Think in terms of half-period, not periods.
-		periodUs >>= 1;
-		periodUs = 0xFFFF - periodUs;
-		
-		soundTimeoutHigh = periodUs >> 8;
-		soundTimeoutLow = periodUs & 0xFF;
-	} else
-		TurnSoundOff();
-}
-// Duplicate version, for calling from the interrupt!
-inline void StartSoundInternal(unsigned short periodUs)
 {
 	// Prepare the port.
 	SOUND_TRIS.SOUND_PIN = 0;
@@ -93,21 +77,27 @@ void PlaySound(unsigned short periodUs, unsigned short durationMs)
 	remainingDuration = durationMs;
 	followingSilence = 0;
 }
-// Duplicate version, for calling from the interrupt!
-inline void PlaySoundInternal(unsigned short periodUs, unsigned short durationMs)
-{
-	StartSoundInternal(periodUs);
-	remainingDuration = durationMs;
-	followingSilence = 0;
-}
 
 void PlayClick(void)
 {
 	PlaySound(1000, 2);
 }
 
-#define NUM_NOTES  24
+#define NUM_NOTES  36
 unsigned short notePeriods[NUM_NOTES] = {
+	7646,
+	7216,
+	6810,
+	6428,
+	6068,
+	5728,
+	5406,
+	5102,
+	4816,
+	4546,
+	4482,
+	4050,
+
 	3823,
 	3608,
 	3405,
@@ -120,6 +110,7 @@ unsigned short notePeriods[NUM_NOTES] = {
 	2273,
 	2241,
 	2025,
+	
 	1911,
 	1804,
 	1703,
@@ -131,7 +122,7 @@ unsigned short notePeriods[NUM_NOTES] = {
 	1204,
 	1136,
 	1073,
-	1066
+	1066,
 };
 
 // Given one of the note length codes,
@@ -151,8 +142,7 @@ inline unsigned short TimeFor(char noteLengthCode)
 	case '6':
 		return 100;
 	case '3':
-
-  return 50;
+		return 50;
 	default:
 		return 0;
 	}
@@ -163,122 +153,146 @@ inline unsigned short TimeFor(char noteLengthCode)
 // If we reach the end of the song, stop making sound and set the current song to zero.
 inline void PlayNextNote(void)
 {
-	if (currentSong) {
-		if (*currentSong) {
-			unsigned short noteTimeMs = TimeFor('8');
-			unsigned short noteDurationMs = noteTimeMs * 4 / 5;
+	char nextSongChar = currentSong[currentSongIndex];
+	if (nextSongChar) {
+		// This is a modifier added to the next note.
+		char note = 0;
+		byte playNote = false;
+		byte isDotted = false;
+		
+		// Step through modifiers until we have enough information to play the next note.
+		for (; nextSongChar && !playNote; nextSongChar = currentSong[++currentSongIndex]) {
+			switch (nextSongChar) {
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '8':
+			case '6':
+				noteTimeMs = TimeFor(nextSongChar);
+				break;
+				
+			case '.':
+				isDotted = true;
+				break;
 			
-			// This is a modifier added to the next note.
-			char note = 0;
-			byte playNote = false;
+			case '+':
+				++note;
+				break;
 			
-			// Step through modifiers until we have enough information to play the next note.
-			for (; *currentSong && !playNote; ++currentSong) {
-				switch (*currentSong) {
-				case '1':
-				case '2':
-				case '3':
-				case '4':
-				case '8':
-				case '6':
-					noteTimeMs = TimeFor(*currentSong);
-					noteDurationMs = noteTimeMs * 4 / 5;
-					break;
+			case '-':
+				--note;
+				break;
+			
+			case 'c':
+				playNote = true;
+				break;
+			case 'd':
+				note += 2;
+				playNote = true;
+				break;
+			case 'e':
+				note += 4;
+				playNote = true;
+				break;
+			case 'f':
+				note += 5;
+				playNote = true;
+				break;
+			case 'g':
+				note += 7;
+				playNote = true;
+				break;
+			case 'a':
+				note += 9;
+				playNote = true;
+				break;
+			case 'b':
+				note += 11;
+				playNote = true;
+				break;
+			case 'C':
+				note += 12;
+				playNote = true;
+				break;
+			case 'D':
+				note += 14;
+				playNote = true;
+				break;
+			case 'E':
+				note += 16;
+				playNote = true;
+				break;
+			case 'F':
+				note += 17;
+				playNote = true;
+				break;
+			case 'G':
+				note += 19;
+				playNote = true;
+				break;
+			case 'A':
+				note += 21;
+				playNote = true;
+				break;
+			case 'B':
+				note += 23;
+				playNote = true;
+				break;
+			
+			case ' ':
+				note = NUM_NOTES;
+				playNote = true;
+				break;
+			
+			case '_':
+				detachment = 5;
+				break;
 				
-				case '+':
-					++note;
-					break;
-				
-				case '-':
-					--note;
-					break;
-				
-				case 'c':
-					playNote = true;
-					break;
-				case 'd':
-					note += 2;
-					playNote = true;
-					break;
-				case 'e':
-					note += 4;
-					playNote = true;
-					break;
-				case 'f':
-					note += 5;
-					playNote = true;
-					break;
-				case 'g':
-					note += 7;
-					playNote = true;
-					break;
-				case 'a':
-					note += 9;
-					playNote = true;
-					break;
-				case 'b':
-					note += 11;
-					playNote = true;
-					break;
-				case 'C':
-					note += 12;
-					playNote = true;
-					break;
-				case 'D':
-					note += 14;
-					playNote = true;
-					break;
-				case 'E':
-					note += 16;
-					playNote = true;
-					break;
-				case 'F':
-					note += 17;
-					playNote = true;
-					break;
-				case 'G':
-					note += 19;
-					playNote = true;
-					break;
-				case 'A':
-					note += 21;
-					playNote = true;
-					break;
-				case 'B':
-					note += 23;
-					playNote = true;
-					break;
-				
-				case ' ':
-					note = NUM_NOTES;
-					playNote = true;
-					break;
-				}
-		  
-				if (playNote) {
-					unsigned short notePeriod;
-					if (note < NUM_NOTES)
-						notePeriod = notePeriods[note];
-					else
-						notePeriod = 0;
-			  
-					PlaySoundInternal(notePeriod, noteDurationMs);
-					followingSilence = noteTimeMs - noteDurationMs;
-				}
+			case '^':
+				detachment = 4;
+				break;
 			}
-		} else {
-			// Done playing this song; forget about it.
-			TurnSoundOff();
+	  
+			if (playNote) {
+				unsigned short notePeriod;
+				if (note < NUM_NOTES)
+					notePeriod = notePeriods[note];
+				else
+					notePeriod = 0;
+		  
+				unsigned thisNoteTime;
+				if (isDotted)
+					thisNoteTime = noteTimeMs + (noteTimeMs >> 2);
+				else
+					thisNoteTime = noteTimeMs;
+					
+				unsigned short noteDurationMs = thisNoteTime;
+				if (detachment == 4) {
+					noteDurationMs *= 4;
+					noteDurationMs /= 5;
+				}
+				PlaySound(notePeriod, noteDurationMs);
+				followingSilence = thisNoteTime - noteDurationMs;
+			}
 		}
 	} else {
-		// There is no song.  Ensure we're not playing anything.
+		// Done playing this song; forget about it.
 		TurnSoundOff();
+		currentSong[0] = 0;
+		currentSongIndex = 0;
+		remainingDuration = 0;
 	}
 }
 
 void PlaySong(const char* song)
 {
-	currentSong = song;
+	// Go back to defaults for interpreting the song string.
+	noteTimeMs = TimeFor('8');
+	detachment = 4;
+	
+	strncpy(currentSong, song, MAX_SONG_LENGTH);
+	currentSongIndex = 0;
 }
 
 void UpdateSoundMs(void)
@@ -290,7 +304,7 @@ void UpdateSong(void)
 {
 	if (millisElapsed) {
 		// If we've just started a song, start the first note playing.
-		if (currentSong && (remainingDuration == 0)) {
+		if (currentSongIndex == 0 && currentSong[0] != '\0') {
 			millisElapsed = 0;
 			PlayNextNote();
 		// Are we playing something now?
@@ -306,7 +320,7 @@ void UpdateSong(void)
 				// We just  finished playing a note or silence. What comes next?
 				if (followingSilence)
 					// The silence to make that note staccato (or just not legato).
-					PlaySoundInternal(0, followingSilence);  // this clears followingSilence automatically
+					PlaySound(0, followingSilence);  // this clears followingSilence automatically
 				else
 					// Look for the next note in the song, if there is any.
 					PlayNextNote();
