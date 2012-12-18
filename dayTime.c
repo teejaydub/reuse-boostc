@@ -35,9 +35,10 @@ byte UpdateDayTime(void)
 	
 	while (seconds >= SECONDS_PER_MINUTE) {
 		intcon.GIE = 0;
-		seconds -= 60;
+		seconds -= SECONDS_PER_MINUTE;
 		intcon.GIE = 1;
 		
+		// Add a minute.
 		++currentTime;
 		
 		if (currentTime >= MINUTES_PER_DAY) {

@@ -22,7 +22,7 @@
 	You can also convert values to time types, and do math on them.
 	
 	Gets time from uiSeconds and uiTime.  Takes over uiSeconds's
-	global 'seconds' for use as the current seconds.
+	global 'seconds' for use as the current seconds, 0-59.
 */
 
 #ifndef __DAYTIME_H
