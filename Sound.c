@@ -31,7 +31,7 @@ unsigned short remainingDuration = 0;  // of the current sound, in milliseconds
 unsigned short followingSilence = 0;  // duration of silence to follow the current sound, or 0 if none
 
 #define MAX_SONG_LENGTH  60
-char currentSong[MAX_SONG_LENGTH + 1];
+char currentSong[MAX_SONG_LENGTH + 1] = {'\0'};
 byte currentSongIndex = 0;
 byte millisElapsed = 0;
 
@@ -47,6 +47,7 @@ inline void TurnSoundOff(void)
 	pir1.TMR1IF = 0;
 	tmr1h = 0;
 	tmr1l = 0;
+	SOUND_TRIS.SOUND_PIN = 0;
 	SET_SHADOW_BIT(SOUND_PORT, SOUND_SHADOW, SOUND_PIN, 0);
 }
 
@@ -80,7 +81,9 @@ void PlaySound(unsigned short periodUs, unsigned short durationMs)
 
 void PlayClick(void)
 {
-	PlaySound(1000, 2);
+	SOUND_TRIS.SOUND_PIN = 0;
+	SET_SHADOW_BIT(SOUND_PORT, SOUND_SHADOW, SOUND_PIN, 1);
+	PlaySound(4000, 1);
 }
 
 #define NUM_NOTES  36
@@ -303,12 +306,8 @@ void UpdateSoundMs(void)
 void UpdateSong(void)
 {
 	if (millisElapsed) {
-		// If we've just started a song, start the first note playing.
-		if (currentSongIndex == 0 && currentSong[0] != '\0') {
-			millisElapsed = 0;
-			PlayNextNote();
 		// Are we playing something now?
-		} else if (remainingDuration > 0) {
+		if (remainingDuration > 0) {
 			// Yes. Let's see if it's over yet.
 			if (remainingDuration > millisElapsed)
 				remainingDuration -= millisElapsed;
@@ -324,6 +323,11 @@ void UpdateSong(void)
 				else
 					// Look for the next note in the song, if there is any.
 					PlayNextNote();
+		}
+		// Or if we've just started a song, start the first note playing.
+		else if (currentSongIndex == 0 && currentSong[0] != '\0') {
+			millisElapsed = 0;
+			PlayNextNote();
 		}
 	}
 }
