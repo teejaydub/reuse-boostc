@@ -30,7 +30,6 @@ byte soundTimeoutLow;
 unsigned short remainingDuration = 0;  // of the current sound, in milliseconds
 unsigned short followingSilence = 0;  // duration of silence to follow the current sound, or 0 if none
 
-#define MAX_SONG_LENGTH  60
 char currentSong[MAX_SONG_LENGTH + 1] = {'\0'};
 byte currentSongIndex = 0;
 byte millisElapsed = 0;
@@ -302,7 +301,7 @@ void TurnOffAllSound(void)
 {
     currentSongIndex = 0;
     currentSong[0] = '\0';
-    StartSound(0);
+    PlaySound(0, 0);
 }
 
 unsigned char IsSoundPlaying(void)
