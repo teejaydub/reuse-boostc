@@ -298,6 +298,18 @@ void PlaySong(const char* song)
 	currentSongIndex = 0;
 }
 
+void TurnOffAllSound(void)
+{
+    currentSongIndex = 0;
+    currentSong[0] = '\0';
+    StartSound(0);
+}
+
+unsigned char IsSoundPlaying(void)
+{
+    return t1con != 0 || currentSong[currentSongIndex] != '\0';
+}
+
 void UpdateSoundMs(void)
 {
 	++millisElapsed;

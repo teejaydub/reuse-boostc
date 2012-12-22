@@ -62,4 +62,10 @@ void PlayClick(void);
 // Default is staccato; can be changed with '_' for legato and '^' for detached, which persist.
 void PlaySong(const char* song);
 
+// Returns true if we're currently playing an individual sound, or if we're in silence that's part of a song.
+unsigned char IsSoundPlaying(void);
+
+// Stops playing all sounds and songs.
+void TurnOffAllSound(void);
+
 #endif
