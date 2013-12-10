@@ -39,14 +39,27 @@
 #define LCD_OFF (1<<5)
 #define LCD_RESET (1<<4)
 
-// These might need to be adjusted.  If they're too low you'll get garbled
-// data; too high and updates will be slow.
-#define LCD_DELAY1  delay_us(20)
-#define LCD_DELAY2  delay_us(80)
-
+#define CHARACTER_STUFF
 #ifdef CHARACTER_STUFF
 #include "glcd_font.h"
 #endif
+
+// These might need to be adjusted.  If they're too low you'll get garbled
+// data; too high and updates will be slow.
+// (That was from the inherited code; neither the datasheet nor experimentation
+// suggest any problem when running at a 4 MHz clock rate.)
+inline void delayShort(void)
+{
+	asm {
+//		nop;
+	}
+}
+inline void delayLong(void)
+{
+	asm {
+//		nop;
+	}
+}
 
 void glcd_write(byte chip, byte reg, byte data) {
 	LCD_D_TRIS = 0;
@@ -59,9 +72,9 @@ void glcd_write(byte chip, byte reg, byte data) {
 	LCD_CTL_PORT.LCD_DI_PIN = reg;
 	
 	LCD_D_PORT = data;
-	LCD_DELAY2;
+	delayLong();
 	LCD_CTL_PORT.LCD_E_PIN = 1;
-	LCD_DELAY1;
+	delayShort();
 	LCD_CTL_PORT.LCD_E_PIN = 0;
 }
 
@@ -77,9 +90,9 @@ byte glcd_read(byte chip, byte reg) {
 	
 	LCD_CTL_PORT.LCD_DI_PIN = reg;
 	
-	LCD_DELAY2;
+	delayLong();
 	LCD_CTL_PORT.LCD_E_PIN = 1;
-	LCD_DELAY1;
+	delayShort();
   
 	d = LCD_D_PORT;
 	LCD_CTL_PORT.LCD_E_PIN = 0;
@@ -115,7 +128,7 @@ void glcd_init(void) {
 	glcd_write_wait(0, LCD_INST, LCD_STARTLINE(0));
 	glcd_write_wait(1, LCD_INST, LCD_STARTLINE(0));
 	
-	glcd_clear(0x99);
+	glcd_clear(0xAA);
 }
 
 
@@ -200,36 +213,47 @@ void glcd_setbit(byte x, byte y, byte v) {
 static byte cursor_x;
 static byte cursor_y;
 
-void lcd_set_cursor(byte row, byte col) {
+void glcd_set_cursor(byte row, byte col) {
   cursor_x = 6 * col;
   cursor_y = 8 * row;
 }
 
-void lcd_putch(byte ch) {
+void glcd_putch(byte ch) {
   byte x, y;
-  const prog_uint8_t* chp;
+  byte offset;
   byte b;
   if (ch < 32) ch = 32;
   if (ch > 128) ch = 128;
-  chp = font_5x7_data + 5 * (ch-32);
+  
+  // Get the offset in the character page.
+  // Each page contains 32 characters.
+  // Because of ROM character constant constraints, no page can be more than 256 characters,
+  // and they have to be addressed by constant reference.
+  offset = 5 * (ch % 32);
+  
   for(x = 0; x < 6; ++x) {
-    b = pgm_read_byte(chp + x);
+	if (ch >= 96)
+		b = font_5x7_data96[offset + x];
+	else if (ch >= 64)
+		b = font_5x7_data64[offset + x];
+	else if (ch >= 32)
+		b = font_5x7_data32[offset + x];
+    
     for(y = 0; y < 8; ++y) {
       if (x < 5 && y < 7) {
-        lcd_setbit(cursor_x + x, cursor_y +y, b & (1<<y));
+        glcd_setbit(cursor_x + x, cursor_y +y, b & (1<<y));
       } else {
-        lcd_setbit(cursor_x + x, cursor_y +y, 0);
+        glcd_setbit(cursor_x + x, cursor_y +y, 0);
       }
     }
   }
   cursor_x += 6;
-  lcd_flush();
+  glcd_flush();
 }
 
-void lcd_putstr(const char* str) {
-  while(*str) {
-    lcd_putch(*str++);
-  }
+void glcd_puts(const char* str) {
+  while (*str)
+    glcd_putch(*str++);
 }
 
 #endif

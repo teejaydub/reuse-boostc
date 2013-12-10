@@ -30,7 +30,7 @@ void glcd_set_cursor(byte row, byte col);
 /* glcd_putch(): write an ascii character at the cursor and advance */
 void glcd_putch(byte ch);
 
-/* glcd_putstr(): write a string at the cursor */ 
-void glcd_putstr(const char* str);
+/* glcd_puts(): write a string at the cursor */ 
+void glcd_puts(const char* str);
 
 #endif
