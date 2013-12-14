@@ -4,7 +4,11 @@
 #include <system.h>
 #include "glcd.h"
 
-// Hard-coding the pin assignments here.
+// Hard-coding the pin assignments here.  Should probably be pulled out into a consts file.
+#define LCD_WIDTH  (64 * 2)
+#define LCD_HEIGHT  64
+#define LCD_CHAR_X_MARGIN  1
+
 #define LCD_D_PORT  porta
 #define LCD_D_TRIS  trisa
 
@@ -214,46 +218,58 @@ static byte cursor_x;
 static byte cursor_y;
 
 void glcd_set_cursor(byte row, byte col) {
-  cursor_x = 6 * col;
-  cursor_y = 8 * row;
+	cursor_x = 6 * col + LCD_CHAR_X_MARGIN;
+	cursor_y = 8 * row;
 }
 
 void glcd_putch(byte ch) {
-  byte x, y;
-  byte offset;
-  byte b;
-  if (ch < 32) ch = 32;
-  if (ch > 128) ch = 128;
-  
-  // Get the offset in the character page.
-  // Each page contains 32 characters.
-  // Because of ROM character constant constraints, no page can be more than 256 characters,
-  // and they have to be addressed by constant reference.
-  offset = 5 * (ch % 32);
-  
-  for(x = 0; x < 6; ++x) {
-	if (ch >= 96)
-		b = font_5x7_data96[offset + x];
-	else if (ch >= 64)
-		b = font_5x7_data64[offset + x];
-	else if (ch >= 32)
-		b = font_5x7_data32[offset + x];
-    
-    for(y = 0; y < 8; ++y) {
-      if (x < 5 && y < 7) {
-        glcd_setbit(cursor_x + x, cursor_y +y, b & (1<<y));
-      } else {
-        glcd_setbit(cursor_x + x, cursor_y +y, 0);
-      }
-    }
-  }
-  cursor_x += 6;
-  glcd_flush();
+	byte x, y;
+	byte offset;
+	byte b;
+	
+	// Get the offset in the character page.
+	// Each page contains 32 characters.
+	// Because of ROM character constant constraints, no page can be more than 256 characters,
+	// and they have to be addressed by constant reference.
+	offset = 5 * (ch % 32);
+	
+	for (x = 0; x < 6; ++x) {
+		if (ch > 128)
+			b = 0;
+		else if (ch >= 96)
+			b = font_5x7_data96[offset + x];
+		else if (ch >= 64)
+			b = font_5x7_data64[offset + x];
+		else if (ch >= 32)
+			b = font_5x7_data32[offset + x];
+		else
+			b = 0;
+		
+		for(y = 0; y < 8; ++y) {
+			if (x < 5 && y < 7) {
+				glcd_setbit(cursor_x + x, cursor_y +y, b & (1<<y));
+			} else {
+				glcd_setbit(cursor_x + x, cursor_y +y, 0);
+			}
+		}
+	}
+	
+	if (ch == '\n' || cursor_x + 12 >= LCD_WIDTH) {
+		// Go to the next line.
+		cursor_x = LCD_CHAR_X_MARGIN;
+		if (cursor_y + 8 > LCD_HEIGHT)
+			cursor_y = 0;
+		else
+			cursor_y += 8;
+	} else {		
+		cursor_x += 6;
+	}
+	glcd_flush();
 }
 
 void glcd_puts(const char* str) {
-  while (*str)
-    glcd_putch(*str++);
+	while (*str)
+		glcd_putch(*str++);
 }
 
 #endif

@@ -2,6 +2,7 @@
 
 #include <system.h>
 
+#define IN_DALLAS_CLOCK
 #include "DallasClock.h"
 
 #include "DallasClock_consts.h"
@@ -92,4 +93,9 @@ byte GetClockSeconds(void)
 void GetClockMemory(byte* buffer)
 {
 	ReadFromI2C(0, buffer, 8);
+}
+
+void ReadClock(void)
+{
+	ReadFromI2C(0, (byte*) &currentTime, 7);
 }
