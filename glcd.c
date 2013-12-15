@@ -5,8 +5,6 @@
 #include "glcd.h"
 
 // Hard-coding the pin assignments here.  Should probably be pulled out into a consts file.
-#define LCD_WIDTH  (64 * 2)
-#define LCD_HEIGHT  64
 #define LCD_CHAR_X_MARGIN  1
 
 #define LCD_D_PORT  porta
@@ -218,8 +216,8 @@ static byte cursor_x;
 static byte cursor_y;
 
 void glcd_set_cursor(byte row, byte col) {
-	cursor_x = 6 * col + LCD_CHAR_X_MARGIN;
-	cursor_y = 8 * row;
+	cursor_x = LCD_CHAR_WIDTH * col + LCD_CHAR_X_MARGIN;
+	cursor_y = LCD_CHAR_HEIGHT * row;
 }
 
 void glcd_putch(byte ch) {
@@ -233,7 +231,7 @@ void glcd_putch(byte ch) {
 	// and they have to be addressed by constant reference.
 	offset = 5 * (ch % 32);
 	
-	for (x = 0; x < 6; ++x) {
+	for (x = 0; x < LCD_CHAR_WIDTH; ++x) {
 		if (ch > 128)
 			b = 0;
 		else if (ch >= 96)
@@ -245,8 +243,8 @@ void glcd_putch(byte ch) {
 		else
 			b = 0;
 		
-		for(y = 0; y < 8; ++y) {
-			if (x < 5 && y < 7) {
+		for(y = 0; y < LCD_CHAR_HEIGHT; ++y) {
+			if (x < LCD_CHAR_WIDTH - 1 && y < LCD_CHAR_HEIGHT - 1) {
 				glcd_setbit(cursor_x + x, cursor_y +y, b & (1<<y));
 			} else {
 				glcd_setbit(cursor_x + x, cursor_y +y, 0);
@@ -254,15 +252,15 @@ void glcd_putch(byte ch) {
 		}
 	}
 	
-	if (ch == '\n' || cursor_x + 12 >= LCD_WIDTH) {
+	if (ch == '\n' || (cursor_x + 2 * LCD_CHAR_WIDTH >= LCD_WIDTH)) {
 		// Go to the next line.
 		cursor_x = LCD_CHAR_X_MARGIN;
-		if (cursor_y + 8 > LCD_HEIGHT)
+		if (cursor_y + LCD_CHAR_HEIGHT >= LCD_HEIGHT)
 			cursor_y = 0;
 		else
-			cursor_y += 8;
+			cursor_y += LCD_CHAR_HEIGHT;
 	} else {		
-		cursor_x += 6;
+		cursor_x += LCD_CHAR_WIDTH;
 	}
 	glcd_flush();
 }

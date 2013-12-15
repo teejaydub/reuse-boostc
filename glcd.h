@@ -9,6 +9,16 @@
 #include "types-tjw.h"
 
 
+#define LCD_WIDTH  (64 * 2)
+#define LCD_HEIGHT  64
+
+// Size of the standard character cell.
+#define LCD_CHAR_WIDTH  6
+#define LCD_CHAR_HEIGHT  8
+
+#define LCD_COLUMNS  (LCD_WIDTH / LCD_CHAR_WIDTH)
+#define LCD_ROWS  (LCD_HEIGHT / LCD_CHAR_HEIGHT)
+
 /* glcd_init(): initialize lcd port directions
  *             enable both display chips
  *             set display line to zero */
