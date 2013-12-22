@@ -34,6 +34,9 @@ void glcd_setbit(byte x, byte y, byte v);
 /* glcd_flush(): write pending bits out to display */
 void glcd_flush(void);
 
+#define CHARACTER_STUFF
+#ifdef CHARACTER_STUFF
+
 /* glcd_set_cursor(): set the cursor position to the given 6x8 cell */
 void glcd_set_cursor(byte row, byte col);
 
@@ -45,4 +48,8 @@ void glcd_putch(byte ch);
  */ 
 void glcd_puts(const char* str);
 
+// Clears the entire 0-relative text line to 0 (white).
+void glcd_clear_line(byte line);
+
+#endif
 #endif

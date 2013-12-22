@@ -73,12 +73,29 @@ byte ReadFromI2C(byte address, byte* retValues, byte len)
 	return true;
 }
 
-void InitDallasClock(void)
+// Initialize to a known time.
+void WriteEpoch(void)
+{
+	#ifdef ZERO_EPOCH
+	byte currentTime[] = { 0, 0x00, 0x00, 7, 0x01, 0x01, 0x00 };
+	#else
+	byte currentTime[] = { 0, 0x56, 0x08, 1, 0x22, 0x12, 0x13 };
+	#endif
+	WriteToI2C(0, currentTime, 7);
+}
+
+byte InitDallasClock(void)
 {
 	i2c_init(I2C_BAUD_VALUE);
-	
-//	byte currentTime[] = { 0, 0x01, 0x23, 5, 0x12, 0x12, 0x13 };
-//	WriteToI2C(0, currentTime, 7);
+	if (!ReadClock()) {
+		// Error initializing, so make sure we are running.
+		WriteEpoch();
+		return false;
+	}
+
+// Comment in for first-time init and debugging	
+//WriteEpoch();
+	return true;
 }
 
 byte GetClockSeconds(void)
@@ -95,7 +112,13 @@ void GetClockMemory(byte* buffer)
 	ReadFromI2C(0, buffer, 8);
 }
 
-void ReadClock(void)
+byte ReadClock(void)
 {
 	ReadFromI2C(0, (byte*) &currentTime, 7);
+	return currentTime.seconds < 0x60;
+}
+
+void WriteClock(void)
+{
+	WriteToI2C(0, (byte*) &currentTime, 7);
 }

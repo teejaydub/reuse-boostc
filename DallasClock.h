@@ -14,7 +14,8 @@
 
 // Call this once, before other functions.
 // Assumes complete control over the I2C bus.
-void InitDallasClock(void);
+// Returns false if the clock appears to be set to the epoch.
+byte InitDallasClock(void);
 
 // Returns the current value of the seconds register, as a number from 0-59.
 byte GetClockSeconds(void);
@@ -23,6 +24,7 @@ byte GetClockSeconds(void);
 void GetClockMemory(byte* buffer);
 
 // Reads from the clock into this structure.
+// Returns false on error.
 DALLAS_CLOCK_EXTERN struct {
 	byte seconds;  // BCD, 00-59
 	byte minutes;  // BCD, 00-59
@@ -32,6 +34,7 @@ DALLAS_CLOCK_EXTERN struct {
 	byte month;  // BCD, 01-12
 	byte year;  // BCD, 00-99
 } currentTime;
-void ReadClock(void);
+byte ReadClock(void);
+void WriteClock(void);
 
 #endif

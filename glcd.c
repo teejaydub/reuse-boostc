@@ -12,12 +12,12 @@
 
 #define LCD_CTL_PORT  latc
 #define LCD_CTL_TRIS  trisc
-#define LCD_E_PIN  7
+#define LCD_E_PIN  5
 #define LCD_DI_PIN  6
-#define LCD_RW_PIN  5
-#define LCD_RST_PIN  2
+#define LCD_RW_PIN  7
+#define LCD_RST_PIN  1
 #define LCD_CS1_PIN  0
-#define LCD_CS2_PIN  1
+#define LCD_CS2_PIN  2
 
 #define LCD_E_MASK  (1 << LCD_E_PIN)
 #define LCD_DI_MASK  (1 << LCD_DI_PIN)
@@ -41,7 +41,6 @@
 #define LCD_OFF (1<<5)
 #define LCD_RESET (1<<4)
 
-#define CHARACTER_STUFF
 #ifdef CHARACTER_STUFF
 #include "glcd_font.h"
 #endif
@@ -268,6 +267,31 @@ void glcd_putch(byte ch) {
 void glcd_puts(const char* str) {
 	while (*str)
 		glcd_putch(*str++);
+}
+
+void glcd_clear_line(byte line)
+{
+	#if 0  // faster
+	glcd_flush();
+	
+	byte x, y;
+	y = line;
+	for (x = 0; x < LCD_WIDTH; x++) {
+		glcd_write_wait(0, LCD_INST, LCD_YADDR(y));
+		glcd_write_wait(0, LCD_INST, LCD_XADDR(x));
+		glcd_write_wait(0, LCD_DATA, 0);
+	}
+	for (x = 0; x < LCD_WIDTH; x++) {
+		glcd_write_wait(1, LCD_INST, LCD_YADDR(y));
+		glcd_write_wait(1, LCD_INST, LCD_XADDR(x));
+		glcd_write_wait(1, LCD_DATA, 0);
+	}
+	#else
+	byte x;
+	glcd_set_cursor(line, 0);
+	for (x = 0; x < LCD_COLUMNS; x++)
+		glcd_putch(' ');
+	#endif
 }
 
 #endif
