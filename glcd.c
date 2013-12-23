@@ -198,6 +198,11 @@ void glcd_clear(byte data) {
 }
 
 void glcd_setbit(byte x, byte y, byte v) {
+	#ifdef UPSIDE_DOWN
+	x = LCD_WIDTH - 1 - x;
+	y = LCD_HEIGHT - 1 - y;
+	#endif
+
 	byte lcd_chip = (x & 0x40) ? 1 : 0;
 	byte lcd_x = (y & 0x3F) >> 3;
 	byte lcd_y = (x & 0x3F);

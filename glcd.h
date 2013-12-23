@@ -12,6 +12,9 @@
 #define LCD_WIDTH  (64 * 2)
 #define LCD_HEIGHT  64
 
+// Define this to have all pixel- and text-oriented operations work upside down.
+#define UPSIDE_DOWN
+
 // Size of the standard character cell.
 #define LCD_CHAR_WIDTH  6
 #define LCD_CHAR_HEIGHT  8
