@@ -52,13 +52,12 @@
 inline void delayShort(void)
 {
 	asm {
-//		nop;
 	}
 }
 inline void delayLong(void)
 {
 	asm {
-//		nop;
+		nop;
 	}
 }
 

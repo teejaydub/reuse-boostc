@@ -15,7 +15,7 @@
 #define NO_ACKNOWLEDGE  1
 
 // Set this from the table in the PIC data sheet - in 18F series it's labeled "I2C™ CLOCK RATE W/BRG"
-#define I2C_BAUD_VALUE  9  // = 100 kHz at 4 MHz clock rate
+#define I2C_BAUD_VALUE  0x12  // = 100 kHz at 8 MHz clock rate
 
 #define I2C_SLAVE_ADDRESS  0xD0  // For the DS1307 RTC module.
 

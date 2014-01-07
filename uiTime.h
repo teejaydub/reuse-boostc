@@ -66,6 +66,9 @@ UITIME_EXTERN unsigned char tickScaler;
 // Requires that GIE is enabled elsewhere, and that UiTimeInterrupt is called.
 void InitUiTime_Timer0(void);
 
+// Same, but use if the clock speed is 8 MHz.
+void InitUiTime_Timer0_8MHz(void);
+
 // Initializes, and dedicates Timer 1 for use and maintenance by this module.
 // Requires that GIE is enabled elsewhere, and that UiTimeInterrupt1 is called.
 void InitUiTime_Timer1(void);

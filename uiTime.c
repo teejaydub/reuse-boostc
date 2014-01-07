@@ -57,6 +57,21 @@ void InitUiTime_Timer0(void)
 	ticks = 0;
 }
 
+void InitUiTime_Timer0_8MHz(void)
+{
+	#if defined(_PIC18F2620) || defined(_PIC18F2320) || defined(_PIC18F1320) || defined(_PIC18F2550)
+	// Enable the timer 0 interrupt, and set prescaler.
+	t0con = 0xC2;  // 1:8 prescaler on an 8-bit Timer 0: rolls over with a period of 1.024 ms.
+	intcon.TMR0IE = 1;
+	#else
+		#error "uiTime.c - update for this chip"
+	#endif
+
+	intcon.PEIE = 1;
+	tickScaler = 0;
+	ticks = 0;
+}
+
 void InitUiTime_Timer1(void)
 {
 	pie1.TMR1IE = 1;
