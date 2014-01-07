@@ -79,7 +79,7 @@ void WriteEpoch(void)
 	#ifdef ZERO_EPOCH
 	byte currentTime[] = { 0, 0x00, 0x00, 7, 0x01, 0x01, 0x00 };
 	#else
-	byte currentTime[] = { 0, 0x56, 0x08, 1, 0x22, 0x12, 0x13 };
+	byte currentTime[] = { 0x0, 0x25, 0x22, 2, 0x06, 0x01, 0x14 };
 	#endif
 	WriteToI2C(0, currentTime, 7);
 }
@@ -114,11 +114,16 @@ void GetClockMemory(byte* buffer)
 
 byte ReadClock(void)
 {
-	ReadFromI2C(0, (byte*) &currentTime, 7);
+	ReadFromI2C(0, currentTimeBuf, 7);
 	return currentTime.seconds < 0x60;
 }
 
 void WriteClock(void)
 {
-	WriteToI2C(0, (byte*) &currentTime, 7);
+	// We apparently need to stop the clock in order to set it.
+	// This is undocumented, but kinda makes a little sense, sort of, I guess.
+	byte stopByte = 0x80;
+	WriteToI2C(0, &stopByte, 1);
+
+	WriteToI2C(0, currentTimeBuf, 7);
 }

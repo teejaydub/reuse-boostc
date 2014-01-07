@@ -34,7 +34,16 @@ DALLAS_CLOCK_EXTERN struct {
 	byte month;  // BCD, 01-12
 	byte year;  // BCD, 00-99
 } currentTime;
+
+
+// Use this to access the currentTime as an array of bytes, like currentTimeBuf[0].
+#define currentTimeBuf  ((byte*) &currentTime)
+
+// Reads and writes the entire currentTime structure all at once.
 byte ReadClock(void);
 void WriteClock(void);
+
+// Writes an individual clock register.
+void SetClockRegister(byte index, byte newValue);
 
 #endif
