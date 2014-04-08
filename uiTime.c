@@ -59,10 +59,15 @@ void InitUiTime_Timer0(void)
 
 void InitUiTime_Timer0_8MHz(void)
 {
-	#if defined(_PIC18F2620) || defined(_PIC18F2320) || defined(_PIC18F1320) || defined(_PIC18F2550)
 	// Enable the timer 0 interrupt, and set prescaler.
+	#if defined(_PIC18F2620) || defined(_PIC18F2320) || defined(_PIC18F1320) || defined(_PIC18F2550)
 	t0con = 0xC2;  // 1:8 prescaler on an 8-bit Timer 0: rolls over with a period of 1.024 ms.
 	intcon.TMR0IE = 1;
+	#elif defined(_PIC16F688)
+	option_reg = (option_reg & 0b11000000) | 0b000000  // Timer 0 counts instructions
+		| 0b0000  // Timer 0 ges the 8-bit prescaler, not the watchdog
+		| 0b010;  // Prescaler 1:8
+	
 	#else
 		#error "uiTime.c - update for this chip"
 	#endif

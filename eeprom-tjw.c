@@ -46,7 +46,7 @@ char read_eeprom(char addr)
 
 void write_eeprom(char addr, char data)
 {        //---- Write eeprom -----
-	clear_bit(pir2, EEIF);  // Clear any existing interrupt flags.  It'll get set again when this write is done.
+	clear_bit(EE_PIR, EEIF);  // Clear any existing interrupt flags.  It'll get set again when this write is done.
 	#if defined(_PIC18F2620) || defined(_PIC18F2550) || defined(_PIC16F886)
 	clear_bit(eecon1, EEPGD);
 	#endif
