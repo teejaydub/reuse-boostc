@@ -58,8 +58,8 @@ void StartSound(unsigned short periodUs)
 	if (periodUs) {
 		// Set up the timer
 		t1con = 0x01;  // prescale 1:1 on 16-bit counter @ 1 MHz.
-		intcon.PEIE = 1;
-		pie1.TMR1IE = 1;
+		intcon.PEIE = 1;  // enable peripheral interrupts
+		pie1.TMR1IE = 1;  // enable timer 1 interrupt
 		
 		// Think in terms of half-period, not periods.
 		periodUs >>= 1;
