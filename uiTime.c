@@ -67,7 +67,6 @@ void InitUiTime_Timer0_8MHz(void)
 	option_reg = (option_reg & 0b11000000) | 0b000000  // Timer 0 counts instructions
 		| 0b0000  // Timer 0 ges the 8-bit prescaler, not the watchdog
 		| 0b010;  // Prescaler 1:8
-	
 	#else
 		#error "uiTime.c - update for this chip"
 	#endif

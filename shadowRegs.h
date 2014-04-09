@@ -36,9 +36,9 @@ SHADOW_REGS_EXTERN byte portc_;
 
 // Sets the specified shadowed register, changing only the masked bits.
 #define SET_SHADOW(regName, shadowReg, newValue, mask)  { shadowReg = (shadowReg & (~(mask))) | (newValue & mask); regName = shadowReg; }
-#define SET_SHADOW_A  { porta_ = (porta_ & (~(mask))) | (newValue & mask); porta = porta_; }
-#define SET_SHADOW_B  { portb_ = (portb_ & (~(mask))) | (newValue & mask); portb = portb_; }
-#define SET_SHADOW_C  { portc_ = (portc_ & (~(mask))) | (newValue & mask); portc = portc_; }
+#define SET_SHADOW_A(newValue, mask)  { porta_ = (porta_ & (~(mask))) | (newValue & mask); porta = porta_; }
+#define SET_SHADOW_B(newValue, mask)  { portb_ = (portb_ & (~(mask))) | (newValue & mask); portb = portb_; }
+#define SET_SHADOW_C(newValue, mask)  { portc_ = (portc_ & (~(mask))) | (newValue & mask); portc = portc_; }
 	
 // Sets the given bit in a shadowed port.
 // The bit number must be constant.
