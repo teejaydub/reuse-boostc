@@ -46,7 +46,7 @@ inline void TurnSoundOff(void)
 	pir1.TMR1IF = 0;
 	tmr1h = 0;
 	tmr1l = 0;
-	SOUND_TRIS.SOUND_PIN = 0;
+	SOUND_TRIS.SOUND_PIN = 1;
 	SET_SHADOW_BIT(SOUND_PORT, SOUND_SHADOW, SOUND_PIN, 0);
 }
 
