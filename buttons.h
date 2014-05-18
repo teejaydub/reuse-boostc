@@ -1,5 +1,5 @@
 /* buttons.h
-    Copyright (c) 2007-2008 by Timothy J. Weber, tw@timothyweber.org.
+    Copyright (c) 2007-2014 by Timothy J. Weber, tw@timothyweber.org.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -33,10 +33,39 @@
 
 #include "types-tjw.h"
 
-#define NO_BTN  0xFF
+#define NO_BTN  0
 
 #include "buttons-consts.h"
 	
+	
+// We optimize for minimal code in the case where there's only one button.
+#define NUM_BTNS  (LAST_BTN - FIRST_BTN + 1)
+
+// IS_BTN_DOWN(i) is true iff the button with the given constant is currently down.
+// This is not debounced.
+#if NUM_BTNS > 1
+ #ifdef BUTTONS_ACTIVE_HIGH
+  #define IS_BTN_DOWN_MASK(mask)   (BUTTON_PORT & mask)
+ #else
+  #define IS_BTN_DOWN_MASK(mask)   (!(BUTTON_PORT & mask))
+ #endif
+ #define IS_BTN_DOWN(i)  IS_BTN_DOWN_MASK(1 << i)
+#else
+ #ifdef BUTTONS_ACTIVE_HIGH
+  #define IS_THE_BTN_DOWN   (BUTTON_PORT.FIRST_BTN)
+ #else
+  #define IS_THE_BTN_DOWN   (!(BUTTON_PORT.FIRST_BTN))
+ #endif
+ #define IS_BTN_DOWN(i)  IS_THE_BTN_DOWN
+#endif
+
+// IS_ANY_BTN_DOWN is true when any button is currently down.
+#if NUM_BTNS > 1
+ #define IS_ANY_BTN_DOWN  IS_BTN_DOWN_MASK(ALL_BTNS_MASK)
+#else
+ #define IS_ANY_BTN_DOWN  IS_THE_BTN_DOWN
+#endif
+
 
 // Global to indicate button presses.
 // Buttons are represented by their bit masks.

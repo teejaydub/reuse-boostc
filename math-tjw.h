@@ -2,7 +2,7 @@
     
     General-purpose math routines.
     
-    Copyright (c) 2010 by Timothy J. Weber, tw@timothyweber.org.
+    Copyright (c) 2010, 2014 by Timothy J. Weber, tw@timothyweber.org.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -50,6 +50,28 @@ T averageUnsigned(T a, T b)
 		++result;
 		
 	return result;
+}
+
+// Return the value of the lowest bit set in x, and clear it in x.
+// The highest bit that we will look at is highestBit.
+// Returns 0 if no bit at or below highestBit is set.
+template <class T>
+T clearLowestSetBit(T& x, byte highestBit)
+{
+	// Save time: check for zero first.
+	if (x == 0)
+		return 0;
+		
+	byte i;
+	T mask = 1;
+	for (i = 0; i <= highestBit; i++) {
+		if (x & mask) {
+			clear_bit(x, i);
+			return i;
+		}
+		mask <<= 1;
+	}
+	return 0;
 }
 
 #endif

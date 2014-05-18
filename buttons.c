@@ -1,5 +1,5 @@
 /* buttons.c
-    Copyright (c) 2007-2008 by Timothy J. Weber, tw@timothyweber.org.
+    Copyright (c) 2007-2014 by Timothy J. Weber, tw@timothyweber.org.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,11 +21,13 @@
 #define IN_BUTTONS
 #include "buttons.h"
 
+#include "math-tjw.h"
 
-#define NUM_BTNS  (LAST_BTN - FIRST_BTN + 1)
 
 #if NUM_BTNS > 1
 static byte downs[NUM_BTNS];
+#else
+static byte downs;
 #endif
 
 
@@ -40,12 +42,7 @@ void CheckButtons(void)
 	
 	byte i;
 	for (i = FIRST_BTN; i <= LAST_BTN; i++) {
-		if (
-			#ifndef BUTTONS_ACTIVE_HIGH
-			!
-			#endif
-			(BUTTON_PORT & mask)) 
-		{
+		if (IS_BTN_DOWN_MASK(mask)) {
 			if (*down == MIN_DOWNS)
 				// We have a press.
 				buttonsPressed |= mask;
@@ -60,13 +57,7 @@ void CheckButtons(void)
 		++down;
 	}
 	#else
-	static byte downs = 0;
-	if (
-		#ifndef BUTTONS_ACTIVE_HIGH
-		!
-		#endif
-		(BUTTON_PORT.FIRST_BTN)) 
-	{
+	if (IS_THE_BTN_DOWN) {
 		if (downs == MIN_DOWNS)
 			// We have a press.
 			buttonsPressed.FIRST_BTN = 1;
@@ -85,21 +76,15 @@ void InitButtons(void)
 	
 	#if NUM_BTNS > 1
 	memset(downs, 0, sizeof(downs));
+	#else
+	downs = 0;
 	#endif
 }
 
 byte GetButton(void)
 {
 	#if NUM_BTNS > 1
-	byte i;
-	byte mask = (1 << FIRST_BTN);
-	for (i = FIRST_BTN; i <= LAST_BTN; i++) {
-		if (buttonsPressed & mask) {
-			clear_bit(buttonsPressed, i);
-			return i;
-		}
-		mask <<= 1;
-	}
+	return clearLowestSetBit<byte>(buttonsPressed, LAST_BTN);
 	#else
 	if (buttonsPressed.FIRST_BTN) {
 		buttonsPressed = 0;
