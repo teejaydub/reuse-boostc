@@ -187,6 +187,11 @@ inline void LCD_DataMode( void )
 	volatile bit rs@CtrlPort.RS = 1;
 }
 
+// Short waits of at least a minimum length,
+// based on the defined clock frequency.
+// Assumes the usual PIC convention of T_nop = 4 * T_clock.
+#define GIGA  (1000 * 1000 * 1000)
+#define INST_FREQ  (CLOCK_FREQ / 4)
 
 inline void LCD_CycleMakeupDelay()
 {
@@ -196,8 +201,12 @@ inline void LCD_CycleMakeupDelay()
 
 	// This delay is required to meet the Sharp data sheet total cycle time of > 1000ns
 	// @40MHz this is 2 instructions
+	#if INST_FREQ > 1 * GIGA/200
 	asm nop 
+	#endif
+	#if INST_FREQ > 2 * GIGA/200
 	asm nop	
+	#endif
 }
 
 
@@ -205,26 +214,42 @@ inline void LCD_EnablePulseDelay()
 {		
 	// PWEH > 460ns on Sharp data sheet
 	// @40MHz this is 5 instructions
+	#if INST_FREQ > 1 * GIGA/460
 	asm nop 
+	#endif
+	#if INST_FREQ > 2 * GIGA/460
 	asm nop
+	#endif
+	#if INST_FREQ > 3 * GIGA/460
+	asm nop 
+	#endif
+	#if INST_FREQ > 4 * GIGA/460
 	asm nop
+	#endif
+	#if INST_FREQ > 5 * GIGA/460
 	asm nop
-	asm nop
+	#endif
 }
 
 inline void LCD_SetupDelay()
 {
 	// tAS > 140ns min on Sharp data sheet
 	// @40MHz this is 2 instructions
+	#if INST_FREQ > 1 * GIGA/140
 	asm nop 
+	#endif
+	#if INST_FREQ > 2 * GIGA/140
 	asm nop
+	#endif
 }
 
 inline void LCD_HoldupDelay()
 {
 	// tAS > 10ns min on Sharp data sheet
-	// @40MHz this is 1 instructions
-	asm nop
+	// @40MHz this is still less than one instruction.
+	#if INST_FREQ > 1 * GIGA/40
+	asm nop 
+	#endif
 }
 
 
@@ -784,6 +809,13 @@ void LCD_Function( char func )
 	_LCD_Write( func );
 }
 
+_LCD_TEMPL
+void LCD_PutChar( char c )
+{
+	_LCD_DataMode();
+	_LCD_Write( c );
+}
+
 ////////////////////////////////////////////////////////////////////////////
 // Helpers that hide template arguments
 ////////////////////////////////////////////////////////////////////////////
@@ -798,6 +830,7 @@ void LCD_Function( char func )
 // high level functions - these all set function or data mode as required
 #define lcd_setup		LCD_Setup<LCD_ARGS>
 #define lprintf			LCD_Printf<LCD_ARGS>
+#define lcd_putc		LCD_PutChar<LCD_ARGS>
 #define lcd_clear		LCD_Clear<LCD_ARGS>
 #define lcd_gotoxy		LCD_GotoXy<LCD_ARGS>
 #define lcd_function 	LCD_Function<LCD_ARGS>
