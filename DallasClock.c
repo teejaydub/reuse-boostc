@@ -20,6 +20,41 @@
 #define I2C_SLAVE_ADDRESS  0xD0  // For the DS1307 RTC module.
 
 
+//=============================================================================
+// Intermediate I2C support
+
+void InitI2CBus(void)
+{
+	volatile bit scl_tris@TRISC.SCL, sda_tris@TRISC.SDA;
+	volatile bit scl@PORTC.SCL, sda@PORTC.SDA;
+
+	// Flush the bus "manually" until we've read 10 consecutive ones.
+	// Others have had success with this method for recovering if there are some slave
+	// devices that are still waiting for data to get clocked out from previous reads,
+	// e.g. if the PIC is getting restarted after programming and the previous execution
+	// was in the middle of a read when programming started.
+	sspcon1.SSPEN = 0;
+	sda_tris = 1;
+	scl = 1;
+	scl_tris = 0;
+	scl = 1;
+		
+	byte ones = 0;
+	while (ones < 10) {
+		// One clock pulse.
+		scl = 0;
+		delay_us(10);
+		if (sda)
+			ones++;
+		else
+			ones = 0;
+		scl = 1;
+	}
+	
+	// Now, do the library initialization.
+	i2c_init(I2C_BAUD_VALUE);
+}
+
 // Writes the specified bytes starting at the specified register; returns nonzero on success.
 byte WriteToI2C(byte address, byte* values, byte len)
 {
@@ -73,6 +108,10 @@ byte ReadFromI2C(byte address, byte* retValues, byte len)
 	return true;
 }
 
+
+//=============================================================================
+// Clock-specific routines.
+
 // Initialize to a known time.
 void WriteEpoch(void)
 {
@@ -86,14 +125,8 @@ void WriteEpoch(void)
 
 byte InitDallasClock(void)
 {
-	i2c_init(I2C_BAUD_VALUE);
-	if (!ReadClock()) {
-		// Error initializing, so make sure we are running.
-		//WriteEpoch();
-		return false;
-	}
-
-	return true;
+	InitI2CBus();
+	return ReadClock() != 0;
 }
 
 byte GetClockSeconds(void)
