@@ -1,5 +1,9 @@
 // Driver for DS1307 real-time clock communication.
 
+// Uses BoostC's I2C implementation.
+// Define use_i2c_SW if you want to use the software version;
+// otherwise, assumes full control over the I2C bus.
+
 #ifndef _DALLAS_CLOCK
 #define _DALLAS_CLOCK
 
@@ -17,7 +21,7 @@
 // Returns false if the clock appears to be set to the epoch.
 byte InitDallasClock(void);
 
-// Returns the current value of the seconds register, as a number from 0-59.
+// Reads the current value of seconds from the clock and returns it, in BCD.
 byte GetClockSeconds(void);
 
 // Reads 8 bytes into buffer.
@@ -40,6 +44,7 @@ DALLAS_CLOCK_EXTERN struct {
 #define currentTimeBuf  ((byte*) &currentTime)
 
 // Reads and writes the entire currentTime structure all at once.
+// Returns nonzero if the read succeeded.
 byte ReadClock(void);
 void WriteClock(void);
 

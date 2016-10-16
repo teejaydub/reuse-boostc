@@ -79,7 +79,7 @@ void WriteEpoch(void)
 	#ifdef ZERO_EPOCH
 	byte currentTime[] = { 0, 0x00, 0x00, 7, 0x01, 0x01, 0x00 };
 	#else
-	byte currentTime[] = { 0x0, 0x25, 0x22, 2, 0x06, 0x01, 0x14 };
+	byte currentTime[] = { 0x0, 0x13, 0x09, 1, 0x16, 0x10, 0x16 };
 	#endif
 	WriteToI2C(0, currentTime, 7);
 }
@@ -89,12 +89,10 @@ byte InitDallasClock(void)
 	i2c_init(I2C_BAUD_VALUE);
 	if (!ReadClock()) {
 		// Error initializing, so make sure we are running.
-		WriteEpoch();
+		//WriteEpoch();
 		return false;
 	}
 
-// Comment in for first-time init and debugging	
-//WriteEpoch();
 	return true;
 }
 
