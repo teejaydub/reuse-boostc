@@ -22,6 +22,7 @@
 byte InitDallasClock(void);
 
 // Reads the current value of seconds from the clock and returns it, in BCD.
+// Doesn't change currentTime.
 byte GetClockSeconds(void);
 
 // Reads 8 bytes into buffer.
