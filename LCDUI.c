@@ -52,13 +52,16 @@ void ConfirmMessage(void)
 	// Show the prompt character.
 	ShowStatusChar(OK_CHAR);
 	
-	lcd_gotoxy(DISPLAY_WIDTH - 1, 0);
+	HighlightStatusChar();
+	lcd_function(cursor_blink_on);
 
 	// Wait.
 	char c;
 	do 
 		c = kb_getc();
 	while (c != ENTER_KEY);
+	
+	lcd_function(cursor_off);
 }
 
 void PrintCentered(const char* msg, byte field)
@@ -156,7 +159,8 @@ byte GetMenuChoice(rom char* menuItems)
 	
 	// Start selecting.
 	byte currentChoice = 0;
-	while (1) {
+	byte done = false;
+	while (!done) {
 		// Index to the selected item's text.
 		byte itemIndex = 0;
 		for (i = titleLength; itemIndex < currentChoice; i++)
@@ -176,6 +180,7 @@ byte GetMenuChoice(rom char* menuItems)
 
 		// Move the cursor to the current choice initial.		
 		lcd_gotoxy(choiceListX + currentChoice, 0);
+		lcd_function(cursor_blink_on);
 	
 		// Get and process the next key.
 		switch (kb_getc()) {
@@ -194,8 +199,15 @@ byte GetMenuChoice(rom char* menuItems)
 			break;
 		
 		case ENTER_KEY:
-			return currentChoice;
+			done = true;
 			break;
+			
+		case ABORT_KEY:
+			currentChoice = MENU_ABORTED;
+			done = true;
 		}
 	}
+	
+	lcd_function(cursor_off);
+	return currentChoice;
 }

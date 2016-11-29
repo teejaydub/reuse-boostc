@@ -57,6 +57,7 @@ void ConfirmMessage(void);
 void PrintCentered(const char* msg, byte field);
 
 // Shows the given two-line message, then prompts for confirmation.
+// Turns the cursor on during the menu, and turns it off afterward.
 void DialogBox(const char* msg1, const char* msg2);
 
 // Clears the display and presents a menu of options.
@@ -68,6 +69,10 @@ void DialogBox(const char* msg1, const char* msg2);
 //   With title: "New game:Random|Computer first|Player first|Cancel"
 //   Simple confirmation: "Reset Statistics:OK|Cancel"
 // Returns the 0-relative index of the chosen item.
+// If specified, startingChoice sets the menu item to begin selecting.
+// Turns the cursor on during the menu, and turns it off afterward.
+// If ABORT_KEY is pressed, returns MENU_ABORTED.
+#define MENU_ABORTED  255
 byte GetMenuChoice(rom char* menuItems);
 
 
