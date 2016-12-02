@@ -158,3 +158,34 @@ void WriteClock(void)
 
 	WriteToI2C(0, currentTimeBuf, 7);
 }
+
+void SetClockRegister(byte index, byte newValue)
+{
+	if (index == 0) {
+		// This is an easy case: just write it.
+		WriteToI2C(0, &newValue, 1);
+		return;
+	}
+
+	// Save the old seconds value.
+	byte oldSeconds = currentTime.seconds;
+
+	// Stop the clock by setting the seconds to 0x80.
+	byte stopByte = 0x80;
+	WriteToI2C(0, &stopByte, 1);
+	
+	// Read the whole time.
+	ReadFromI2C(0, currentTimeBuf, 7);
+	
+	// Modify the whole time.
+	currentTimeBuf[index] = newValue;
+	
+	// Restore the seconds.
+	if (index == 0)
+		currentTime.seconds = newValue;
+	else
+		currentTime.seconds = oldSeconds;
+	
+	// Write the whole time back out.
+	WriteToI2C(0, currentTimeBuf, 7);
+}

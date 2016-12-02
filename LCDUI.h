@@ -75,5 +75,4 @@ void DialogBox(const char* msg1, const char* msg2);
 #define MENU_ABORTED  255
 byte GetMenuChoice(rom char* menuItems);
 
-
 #endif
