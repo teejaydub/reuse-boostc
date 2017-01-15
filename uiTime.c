@@ -57,6 +57,7 @@ void InitUiTime_Timer0(void)
 	ticks = 0;
 }
 
+#if !defined(_PIC16F916)  // can't use this at all on some chips
 void InitUiTime_Timer0_8MHz(void)
 {
 	// Enable the timer 0 interrupt, and set prescaler.
@@ -75,6 +76,7 @@ void InitUiTime_Timer0_8MHz(void)
 	tickScaler = 0;
 	ticks = 0;
 }
+#endif
 
 void InitUiTime_Timer1(void)
 {
