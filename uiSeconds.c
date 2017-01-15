@@ -28,7 +28,6 @@
 // Tick value when we last updated.
 static byte secondTicks = 0;
 
-
 void ClearUiSeconds(void)
 {
 	seconds = 0;
@@ -48,4 +47,18 @@ byte UpdateUiSeconds(void)
 		
 		result = true;
 	}
+}
+
+void UpdateUiSecondsTimer2(void)
+{
+	// Timer 2, rolling over with a 4,000 ms period.
+	if (pir1.TMR2IF) {
+		// Clear the interrupt.
+		pir1.TMR2IF = 0;
+
+		if (++secondTicks >= 250) {
+			++seconds;
+			secondTicks = 0;
+		}
+	} 
 }

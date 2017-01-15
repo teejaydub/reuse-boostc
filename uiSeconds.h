@@ -18,6 +18,9 @@
 // Simple timekeeping; accumulates uiTime's clock ticks into seconds.
 // Range is from one second to 2^16 seconds (~18 hours); accuracy is dependent on uiTime.
 // Requires uiTime.
+//
+// Or, call InitUiSeconds_Timer2() first, then UpdateUiSecondsTimer2() in the ISR,
+// for more accurate timekeeping (precise to the accuracy of the instruction clock).
 
 #ifndef __UISECONDS_H
 #define __UISECONDS_H
@@ -50,5 +53,18 @@ void ClearUiSeconds(void);
 // Returns true if we've just rolled over to a new second.
 byte UpdateUiSeconds(void);
 
+// Alternate, more accurate form that uses Timer 2:
+// call this once to initialize.
+inline void InitUiSeconds_Timer2(void)
+{
+	// Set up Timer 2 for 1:16 prescaler, with a period of 250.
+	pie1.TMR2IE = 1;
+	pr2 = 249;
+	t2con = 0x07;  // turn it on with 1:16 prescaler and 1:1 postscaler
+	seconds = 0;
+}
+
+// Then call this in the ISR to keep the seconds updated.
+void UpdateUiSecondsTimer2(void);
 
 #endif

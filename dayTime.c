@@ -23,6 +23,16 @@
 #include "uiSeconds.h"
 
 
+// This is the number of seconds we count per minute if we're using
+// 1024 microseconds per millisecond and 256 ms * 4 ticks = 1 second.
+#define SECONDS_PER_MINUTE_ADJUSTED  57
+
+// Every so many minutes, wait an additional second.
+// This was 12 based on the spreadsheet.
+#define ADJUST_MINUTES  4
+byte minutesSinceAdjusted = 0;
+
+
 void SetDayTime(byte hours, byte minutes)
 {
 	seconds = 0;
@@ -46,6 +56,37 @@ byte UpdateDayTime(void)
 			currentTime = 0;
 			result = true;
 		}
+	}
+	
+	return result;
+}
+
+byte UpdateDayTimeAdjusted(void)
+{
+	byte result = false;
+	
+	while (seconds >= SECONDS_PER_MINUTE_ADJUSTED) {
+		intcon.GIE = 0;
+		seconds -= SECONDS_PER_MINUTE_ADJUSTED;
+		intcon.GIE = 1;
+		
+		// Add a minute.
+		++currentTime;
+		++minutesSinceAdjusted;
+				
+		if (currentTime >= MINUTES_PER_DAY) {
+			// We'll assume less than a minute has passed since we noticed.
+			currentTime = 0;
+			result = true;
+		}
+	}
+	
+	if (minutesSinceAdjusted >= ADJUST_MINUTES && seconds > 0) {
+		// Several times an hour, delay one second.
+		intcon.GIE = 0;
+		--seconds;
+		intcon.GIE = 1;
+		minutesSinceAdjusted = 0;
 	}
 	
 	return result;

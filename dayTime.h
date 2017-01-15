@@ -72,6 +72,11 @@ void SetDayTime(byte hours, byte minutes);
 // It returns true if we've just crossed to a new day.
 byte UpdateDayTime(void);
 
+// Or, use this one if you're updating seconds using the default Timer 0 implementation of uiTime,
+// with 1.024/1.000 and 256/250 due to timers.
+// (not yet reliable)
+byte UpdateDayTimeAdjusted(void);
+
 // Gets the current time, in a 24-hour clock, into the specified variables.
 #define GetDayTime(hours, minutes)  DecodeDayTime(currentTime, hours, minutes)
 
