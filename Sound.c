@@ -37,6 +37,9 @@ byte millisElapsed = 0;
 // For interpreting song strings.
 unsigned short noteTimeMs;
 byte detachment;  // out of 5, where 5/5 = legato, and usually 4/5 = staccato.
+byte swinging = false;
+byte swingLong = false;
+byte transpose = 0;
 
 
 inline void TurnSoundOff(void)
@@ -87,24 +90,24 @@ void PlayClick(void)
 
 #define NUM_NOTES  36
 unsigned short notePeriods[NUM_NOTES] = {
-	7646,
-	7216,
-	6810,
-	6428,
-	6068,
-	5728,
-	5406,
-	5102,
+	7646,  // c
+	7216,  // +c = -d = C#
+	6810,  // d
+	6428,  // +d = -e = D#
+	6068,  // e
+	5728,  // f
+	5406,  
+	5152,  // g
 	4816,
 	4546,
 	4482,
-	4050,
+	4050,  // b
 
-	3823,
-	3608,
-	3405,
+	3823,  // C
+	3608,  // +C
+	3405,  // D
 	3214,
-	3034,
+	3034,  // E
 	2864,
 	2703,
 	2551,
@@ -113,7 +116,8 @@ unsigned short notePeriods[NUM_NOTES] = {
 	2241,
 	2025,
 	
-	1911,
+	// Third octave, reachable by 'T'.
+	1911,  // C
 	1804,
 	1703,
 	1607,
@@ -157,7 +161,7 @@ inline void PlayNextNote(void)
 {
 	char nextSongChar = currentSong[currentSongIndex];
 	if (nextSongChar) {
-		// This is a modifier added to the next note.
+		// This is the note number to play next.  It's modified by the letters later.
 		char note = 0;
 		byte playNote = false;
 		byte isDotted = false;
@@ -172,10 +176,19 @@ inline void PlayNextNote(void)
 			case '8':
 			case '6':
 				noteTimeMs = TimeFor(nextSongChar);
+				swinging = false;
 				break;
 				
 			case '.':
 				isDotted = true;
+				break;
+				
+			case 'T':
+				transpose = 12;
+				break;
+				
+			case 't':
+				transpose = 0;
 				break;
 			
 			case '+':
@@ -254,21 +267,37 @@ inline void PlayNextNote(void)
 			case '^':
 				detachment = 4;
 				break;
+			
+			case '~':
+				swinging = true;
+				swingLong = true;
+				break;
 			}
 	  
 			if (playNote) {
 				unsigned short notePeriod;
 				if (note < NUM_NOTES)
-					notePeriod = notePeriods[note];
+					notePeriod = notePeriods[note + transpose];
 				else
 					notePeriod = 0;
 		  
+				// thisNoteTime is the time taken by the note plus its following silence.
 				unsigned thisNoteTime;
 				if (isDotted)
-					thisNoteTime = noteTimeMs + (noteTimeMs >> 2);
+					thisNoteTime = noteTimeMs + (noteTimeMs >> 1);
 				else
 					thisNoteTime = noteTimeMs;
 					
+				if (swinging) {
+					unsigned swingBy = thisNoteTime / 3;
+					if (swingLong)
+						thisNoteTime = thisNoteTime + swingBy;
+					else
+						thisNoteTime = thisNoteTime - swingBy;
+					swingLong = !swingLong;
+				}
+					
+				// noteDurationMs is the duration of the note's sound.
 				unsigned short noteDurationMs = thisNoteTime;
 				if (detachment == 4) {
 					noteDurationMs *= 4;
@@ -292,6 +321,7 @@ void PlaySong(const char* song)
 	// Go back to defaults for interpreting the song string.
 	noteTimeMs = TimeFor('8');
 	detachment = 4;
+	swinging = false;
 	
 	strncpy(currentSong, song, MAX_SONG_LENGTH);
 	currentSongIndex = 0;

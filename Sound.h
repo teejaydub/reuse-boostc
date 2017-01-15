@@ -52,6 +52,7 @@ void PlayClick(void);
 // Plain letters signify diatonic (C major) notes over two octaves,
 // lowercase for the lower octave (c-b) and uppercase for the upper octave (C-B).
 // E.g., an ascending scale is "cdefgabC".
+// Capital 'T' transposes up an additional octave; lowercase 't' returns to the home octaves.
 // The default duration is an eighth note at 120 bpm.
 // Duration is changed for subsequent notes using '8', '4', '2', and '1'
 // for eighth, quarter, half, and whole notes (4/4), or '6' for sixteenths or '3' for thirty-seconds.
@@ -59,7 +60,9 @@ void PlayClick(void);
 // Accidentals can be prefixed as '+' for sharp and '-' for flat,
 // and affect only the following note.
 // A space (' ') signifies a rest, and uses the current duration.
-// Default is staccato; can be changed with '_' for legato and '^' for detached, which persist.
+// Default is staccato; can be changed with '_' for legato and '^' for staccato, which persist.
+// Turn "swinging" on with '~'; this skews pairs of adjacent eighth notes (or rests)
+// towards dotted eighths and sixteenths.  It's turned off when changing durations.
 void PlaySong(const char* song);
 
 // Returns true if we're currently playing an individual sound, or if we're in silence that's part of a song.
