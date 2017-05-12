@@ -36,7 +36,7 @@ byte minutesSinceAdjusted = 0;
 void SetDayTime(byte hours, byte minutes)
 {
 	seconds = 0;
-	currentTime = MakeDayTime(hours, minutes);
+	currentDayTime = MakeDayTime(hours, minutes);
 }
 
 byte UpdateDayTime(void)
@@ -49,11 +49,11 @@ byte UpdateDayTime(void)
 		intcon.GIE = 1;
 		
 		// Add a minute.
-		++currentTime;
+		++currentDayTime;
 		
-		if (currentTime >= MINUTES_PER_DAY) {
+		if (currentDayTime >= MINUTES_PER_DAY) {
 			// We'll assume less than a minute has passed since we noticed.
-			currentTime = 0;
+			currentDayTime = 0;
 			result = true;
 		}
 	}
@@ -71,12 +71,12 @@ byte UpdateDayTimeAdjusted(void)
 		intcon.GIE = 1;
 		
 		// Add a minute.
-		++currentTime;
+		++currentDayTime;
 		++minutesSinceAdjusted;
 				
-		if (currentTime >= MINUTES_PER_DAY) {
+		if (currentDayTime >= MINUTES_PER_DAY) {
 			// We'll assume less than a minute has passed since we noticed.
-			currentTime = 0;
+			currentDayTime = 0;
 			result = true;
 		}
 	}

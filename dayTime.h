@@ -54,7 +54,7 @@ typedef unsigned short  dayTime_t;
 
 // Don't change this outside of this module.
 // Format is minutes since midnight.
-DAYTIME_EXTERN dayTime_t currentTime;
+DAYTIME_EXTERN dayTime_t currentDayTime;
 
 
 inline dayTime_t MakeDayTime(byte hours, byte minutes)
