@@ -23,6 +23,8 @@
 
 #include <stdlib.h>
 
+#include <types-tjw.h>
+
 
 // Accumulate minimum and maximum values.
 // Mainly useful when you have a complex expression as the accumulator,
