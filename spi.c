@@ -52,7 +52,9 @@ void spi_write(byte d)
 {
 	for (byte i = 0; i != 8; i++) {
 		set_spi_clock(~SPI_CLOCK_EDGE);
+		
 		set_spi_data(d & 0x80);
+		
 		set_spi_clock(SPI_CLOCK_EDGE);
 		d <<= 1;
 	}
@@ -61,5 +63,17 @@ void spi_write(byte d)
 
 byte spi_read(void)
 {
-	// not yet implemented
+	byte result = 0;
+	for (byte i = 0; i != 8; i++) {
+		set_spi_clock(SPI_CLOCK_EDGE);
+		
+		// Shift the new data in through the low bit.
+		result <<= 1;
+		if (SPI_SDI_PORT.SPI_SDI_PIN)
+			result |= 1;
+			
+		set_spi_clock(~SPI_CLOCK_EDGE);
+	}
+	set_spi_clock(SPI_CLOCK_IDLE);
+	return result;
 }
