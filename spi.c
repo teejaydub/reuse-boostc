@@ -45,9 +45,11 @@ inline void set_spi_clock(byte c)
 	#endif
 }
 
+#define SET_SPI_CLOCK(c)  SPI_SCK_PORT.SPI_SCK_PIN = c
+
 void spi_init(void)
 {
-	set_spi_clock(SPI_CLOCK_IDLE);
+	SET_SPI_CLOCK(SPI_CLOCK_IDLE);
 	set_spi_data(0);
 
 	SPI_SCK_TRIS.SPI_SCK_PIN = 0;  // set SCK for output.
@@ -59,29 +61,29 @@ void spi_init(void)
 void spi_write(byte d)
 {
 	for (byte i = 0; i != 8; i++) {
-		set_spi_clock(~SPI_CLOCK_EDGE);
+		SET_SPI_CLOCK(~SPI_CLOCK_EDGE);
 		
 		set_spi_data(d & 0x80);
 		
-		set_spi_clock(SPI_CLOCK_EDGE);
+		SET_SPI_CLOCK(SPI_CLOCK_EDGE);
 		d <<= 1;
 	}
-	set_spi_clock(SPI_CLOCK_IDLE);
+	SET_SPI_CLOCK(SPI_CLOCK_IDLE);
 }
 
 byte spi_read(void)
 {
 	byte result = 0;
 	for (byte i = 0; i != 8; i++) {
-		set_spi_clock(SPI_CLOCK_EDGE);
+		SET_SPI_CLOCK(SPI_CLOCK_EDGE);
 		
 		// Shift the new data in through the low bit.
 		result <<= 1;
 		if (SPI_SDI_PORT.SPI_SDI_PIN)
 			result |= 1;
 			
-		set_spi_clock(~SPI_CLOCK_EDGE);
+		SET_SPI_CLOCK(~SPI_CLOCK_EDGE);
 	}
-	set_spi_clock(SPI_CLOCK_IDLE);
+	SET_SPI_CLOCK(SPI_CLOCK_IDLE);
 	return result;
 }
