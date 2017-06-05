@@ -29,12 +29,20 @@
 
 inline void set_spi_data(byte d)
 {
+	#ifdef USE_SHADOW_REGS
 	SET_SHADOW_BIT(SPI_SDO_PORT, SPI_SDO_SHADOW, SPI_SDO_PIN, d != 0);
+	#else
+	SPI_SDO_PORT.SPI_SDO_PIN = (d != 0);
+	#endif
 }
 
 inline void set_spi_clock(byte c)
 {
+	#ifdef USE_SHADOW_REGS
 	SET_SHADOW_BIT(SPI_SCK_PORT, SPI_SCK_SHADOW, SPI_SCK_PIN, c);
+	#else
+	SPI_SCK_PORT.SPI_SCK_PIN = c;
+	#endif
 }
 
 void spi_init(void)
