@@ -16,6 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define USE_SHADOW_REGS
+
 #define IN_SPI_TJW_H
 
 #include <system.h>
@@ -45,7 +47,11 @@ inline void set_spi_clock(byte c)
 	#endif
 }
 
-#define SET_SPI_CLOCK(c)  SPI_SCK_PORT.SPI_SCK_PIN = c
+#ifdef USE_SHADOW_REGS
+ #define SET_SPI_CLOCK(c)  SET_SHADOW_BIT(SPI_SCK_PORT, SPI_SCK_SHADOW, SPI_SCK_PIN, c)
+#else
+ #define SET_SPI_CLOCK(c)  SPI_SCK_PORT.SPI_SCK_PIN = c
+#endif
 
 void spi_init(void)
 {
