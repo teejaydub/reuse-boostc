@@ -100,6 +100,7 @@ inline byte GetADValue8(byte channel)
 #define ADC_MAX_SHORT_RIGHT  1023
 #define ADC_RANGE_SHORT_LEFT  65536
 #define ADC_RANGE_SHORT_RIGHT  1024
+#ifdef ATOD_INLINE
 inline unsigned short GetADValueShort(byte channel)
 {
 	ReadADChannel(channel);
@@ -108,6 +109,9 @@ inline unsigned short GetADValueShort(byte channel)
 	MAKESHORT(result, adresl, adresh);
 	return result;
 }
+#else
+unsigned short GetADValueShort(byte channel);
+#endif
 
 // Same, for fixed16.
 // Values will range from 0.0 - 255.0 with left-justification (and two bits of fractional value),

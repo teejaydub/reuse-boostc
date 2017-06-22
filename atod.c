@@ -94,3 +94,14 @@ void AcquireAndConvertAD(void)
 	// Turn off A/D.
 	adcon0.ADON = 0;
 }
+
+#ifndef ATOD_INLINE
+unsigned short GetADValueShort(byte channel)
+{
+	ReadADChannel(channel);
+	
+	unsigned short result;
+	MAKESHORT(result, adresl, adresh);
+	return result;
+}
+#endif
