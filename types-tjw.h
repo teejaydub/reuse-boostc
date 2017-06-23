@@ -40,4 +40,7 @@ inline void setBit(char& reg, byte bitNum, byte testValue)
 // Toggles the specified bit in the specified register.
 #define toggleBit(reg, bitNum)  (reg ^= BITMASK(bitNum))
 
+// Swaps the bytes of short 's', and puts them in dest.
+#define SWAPBYTES(dest, s)  dest = ((s & 0xFF) << 8) | ((s & 0xFF00) >> 8);
+
 #endif
