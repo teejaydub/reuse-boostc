@@ -32,6 +32,12 @@
 // Initializes the SPI interface on the specified pins.
 void spi_init(void);
 
+// Selects the SPI slave on the given (single) Slave Select line.
+void spi_select(void);
+
+// Deselects the SPI slave on SS.
+void spi_deselect(void);
+
 // Sends the given byte.
 void spi_write(byte d);
 

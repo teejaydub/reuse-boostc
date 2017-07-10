@@ -22,10 +22,15 @@
 #define SPI_SDO_PIN  7
 #define SPI_SDO_TRIS  trisb
 
+#define SPI_SS_PORT  portb
+#define SPI_SS_SHADOW  portb_
+#define SPI_SS_PIN  5
+#define SPI_SS_TRIS  trisb
+
 // Protocol parameters.
 #define SPI_CLOCK_IDLE  0  // clock pin value when idle.
 
 #define SPI_RISING  1
 #define SPI_FALLING  0
-#define SPI_CLOCK_EDGE  SPI_RISING  // output data on this clock edge
+#define SPI_CLOCK_EDGE  SPI_FALLING  // output data on this clock edge
 

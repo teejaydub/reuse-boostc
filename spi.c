@@ -53,6 +53,18 @@ inline void set_spi_clock(byte c)
  #define SET_SPI_CLOCK(c)  SPI_SCK_PORT.SPI_SCK_PIN = c
 #endif
 
+void spi_select(void)
+{
+	// Assumes active-low slave select.
+	SET_SHADOW_BIT(SPI_SS_PORT, SPI_SS_SHADOW, SPI_SS_PIN, 0);
+}
+
+void spi_deselect(void)
+{
+	// Assumes active-low slave select.
+	SET_SHADOW_BIT(SPI_SS_PORT, SPI_SS_SHADOW, SPI_SS_PIN, 1);
+}
+
 void spi_init(void)
 {
 	SET_SPI_CLOCK(SPI_CLOCK_IDLE);
@@ -61,6 +73,7 @@ void spi_init(void)
 	SPI_SCK_TRIS.SPI_SCK_PIN = 0;  // set SCK for output.
 	SPI_SDO_TRIS.SPI_SDO_PIN = 0;  // set SDO for output
 	SPI_SDI_TRIS.SPI_SDI_PIN = 1;  // set SDI for input
+	SPI_SS_TRIS.SPI_SS_PIN = 0;  // set SS for output
 }
 
 // Bit-bang serial blocking write of d, as fast as possible (which won't be very fast by SPI standards).
