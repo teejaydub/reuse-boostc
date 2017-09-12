@@ -58,6 +58,7 @@ T averageUnsigned(T a, T b)
 // The highest bit that we will look at is highestBit.
 // Returns 0 if no bit at or below highestBit is set.
 template <class T>
+inline
 T clearLowestSetBit(T& x, byte highestBit)
 {
 	// Save time: check for zero first.
@@ -68,7 +69,7 @@ T clearLowestSetBit(T& x, byte highestBit)
 	T mask = 1;
 	for (i = 0; i <= highestBit; i++) {
 		if (x & mask) {
-			clear_bit(x, i);
+			x ^= mask;
 			return i;
 		}
 		mask <<= 1;
