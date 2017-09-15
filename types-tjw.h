@@ -43,4 +43,8 @@ inline void setBit(char& reg, byte bitNum, byte testValue)
 // Swaps the bytes of short 's', and puts them in dest.
 #define SWAPBYTES(dest, s)  dest = ((s & 0xFF) << 8) | ((s & 0xFF00) >> 8);
 
+// Return the low (first) and high (second) byte of a numeric constant.
+#define LOWBYTE(x)  (x & 0xFF)
+#define HIGHBYTE(x)  ((x & 0xFF00) >> 8)
+
 #endif

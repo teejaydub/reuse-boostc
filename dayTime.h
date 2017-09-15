@@ -62,6 +62,8 @@ inline dayTime_t MakeDayTime(byte hours, byte minutes)
 	return (unsigned short)(hours) * MINUTES_PER_HOUR + (unsigned short) minutes;
 }
 
+#define MAKE_DAY_TIME(hours, minutes)  (hours * MINUTES_PER_HOUR + minutes)
+
 // Returns the given time, divided up into hours and minutes and returned in the two specified variables.
 void DecodeDayTime(dayTime_t time, byte& hours, byte& minutes);
 
