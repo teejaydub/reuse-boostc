@@ -59,7 +59,7 @@ void ConfirmMessage(void)
 	char c;
 	do 
 		c = kb_getc();
-	while (c != ENTER_KEY);
+	while (c != ENTER_KEY && c != MENU_ABORTED);
 	
 	lcd_function(cursor_off);
 }

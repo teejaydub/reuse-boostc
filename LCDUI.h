@@ -57,6 +57,7 @@ void ConfirmMessage(void);
 void PrintCentered(const char* msg, byte field);
 
 // Shows the given two-line message, then prompts for confirmation.
+// Either ENTER_KEY or ABORT_KEY will close the dialog box. 
 // Turns the cursor on during the menu, and turns it off afterward.
 void DialogBox(const char* msg1, const char* msg2);
 
