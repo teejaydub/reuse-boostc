@@ -52,4 +52,17 @@ void WriteClock(void);
 // Writes an individual clock register.
 void SetClockRegister(byte index, byte newValue);
 
+// Returns true if the given weekday (1-7) is on the weekend (1 or 7).
+// If dayOfWeek is unspecified, uses currentTime.dayOfWeek.
+
+inline bool IsWeekend(byte dayOfWeek)
+{
+	return dayOfWeek == 1 || dayOfWeek == 7;
+}
+
+inline bool IsWeekend(void)
+{
+	return IsWeekend(currentTime.dayOfWeek);
+}
+
 #endif
