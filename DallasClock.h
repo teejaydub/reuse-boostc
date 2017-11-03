@@ -65,4 +65,12 @@ inline bool IsWeekend(void)
 	return IsWeekend(currentTime.dayOfWeek);
 }
 
+// Returns the weekday code (1-7) for the given number of days after today.
+// So, if it's Sunday (day 1) and days = 1, return 2; if it's Saturday,
+// return 1.
+inline byte WeekdayPlus(byte days)
+{
+	return ((currentTime.dayOfWeek - 1 + days) % 7) + 1;
+}
+
 #endif
