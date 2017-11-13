@@ -131,8 +131,9 @@ byte spi_read(void)
 #if !SPI_MASTER
 bool messageRestarted(void)
 {
-	bool result = (lastSelectCount != tmr1l);
-	lastSelectCount = tmr1l;
+	byte nextCount = tmr1l;
+	bool result = (lastSelectCount != nextCount);
+	lastSelectCount = nextCount;
 	return result;
 }
 #endif
