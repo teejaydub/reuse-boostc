@@ -2,7 +2,12 @@
 
 	SPI interface, supporting bit-bang serial on any combination of GPIO pins.
 	(Useful if your MSSP peripheral is already in use for other things, but you
-	can find three other free pins.)
+	can find three or four other free pins.)
+	
+	Master mode works pretty fully.
+	
+	Slave mode requires Timer 1 (without interrupt), and exclusive use of the SPI bus.
+	That is, there can't be any other slaves.
 
     Copyright (c) 2010, 2017 by Timothy J. Weber, tw@timothyweber.org.
 
@@ -20,7 +25,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #ifndef __SPI_TJW_H
 #define __SPI_TJW_H
 
@@ -32,17 +36,33 @@
 // Initializes the SPI interface on the specified pins.
 void spi_init(void);
 
+// Sends the given byte, in Master mode.
+// In Slave mode, sets this as the next byte to be sent.
+void spi_write(byte d);
+
+#if SPI_MASTER
+
+// Master interface: bit-banged synchronously.
+
 // Selects the SPI slave on the given (single) Slave Select line.
 void spi_select(void);
 
 // Deselects the SPI slave on SS.
 void spi_deselect(void);
 
-// Sends the given byte.
-void spi_write(byte d);
-
 // Receives a byte and returns it.
 byte spi_read(void);
+
+#else
+
+// Slave interface: requires an interrupt.
+
+// Returns true if the slave as been reselected since the last read.
+// Clears the condition if it was set.
+bool messageRestarted(void);
+
+
+#endif
 
 #endif
 // __SPI_TJW_H
