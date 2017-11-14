@@ -8,8 +8,8 @@
 	
 	Slave mode requires Timer 1 (without interrupt), and exclusive use of the SPI bus.
 	That is, there can't be any other slaves.
-	It also uses the queue module for a circular input buffer.
-	If the queue fills up, older bytes received will be lost.
+	It also assumes that the queue is statically sized to the maximum length
+	of a whole conversation between Chip Select events.
 
     Copyright (c) 2010, 2017 by Timothy J. Weber, tw@timothyweber.org.
 
@@ -42,13 +42,12 @@
 #endif
 
 #if !SPI_MASTER
- #include "queue.h"
-#endif
-
-#if !MASTER
+  SPI_EXTERN byte spiQueue[SPI_QUEUE_LEN];
   SPI_EXTERN byte spiLastSelectCount;
   SPI_EXTERN byte spiReceive;
   SPI_EXTERN byte spiBitsToGo;
+  SPI_EXTERN byte spiLenUsed;  // tail of the queue
+  SPI_EXTERN byte spiRead;  // head of the queue
 #endif
 
 // Initializes the SPI interface on the specified pins.
@@ -87,7 +86,9 @@ inline bool messageRestarted(void)
 
 inline void clearSpiReceive(void)
 {
-	spiReceive = 0;
+	// spiReceive = 0;  // you'd think you'd need this,
+	// but this next line takes care of it - because after 8 shift-ins,
+	// the original value is irrelevant:
 	spiBitsToGo = 8;
 }
 
@@ -97,51 +98,55 @@ inline void spiInterrupt(void)
 	if (intcon.INTF) {
 		intcon.INTF = 0;
 		spiReceive = (spiReceive << 1) | SPI_SDI_PORT.SPI_SDI_PIN;
-		if (messageRestarted())
-			spiBitsToGo = 7;
-		else if (--spiBitsToGo == 0) {
-			PrePushQueue();
-			*QueueTail() = spiReceive;
-			PushQueue();
-			
-			spiBitsToGo = 8;
+		if (--spiBitsToGo == 0) {
+			if (spiLenUsed <= SPI_QUEUE_LEN) {
+				spiQueue[spiLenUsed++] = spiReceive;
+				spiBitsToGo = 8;
+			}
 		}
 	}
 }
 
-// Also call this often to catch unusual resets.
+// Also call this often.
 // Returns the number of characters waiting.
 inline byte spiPoll(void)
 {
-	return queueCount;
+	if (messageRestarted()) {
+		clearSpiReceive();
+		spiLenUsed = 0;
+		spiRead = 0;
+	}
+
+	return spiLenUsed - spiRead;
 }
 
 // Returns the next character from the queue.
 inline byte spiPeek(void)
 {
-	return *QueueHead();
+	return spiQueue[spiRead];
 }
 
 // Returns the character after the next one from the queue.
 inline byte spiPeekNext(void)
 {
-	return *QueueNextHead();
+	return spiQueue[spiRead + 1];
 }
 
 // Returns and discards the next character from the input queue.
 inline byte spiRead(void)
 {
-	byte result = *QueueHead();
-	
-	PopQueue();
+	byte result = spiPeek();
+	if (++spiRead > spiLenUsed)
+		spiRead = spiLenUsed;
 	return result;
 }
 
 // Discards the given number of characters from the input queue.
 inline void spiSkip(byte count)
 {
-	while (count--)
-		PopQueue();
+	spiRead += count;
+	if (spiRead > spiLenUsed)
+		spiRead = spiLenUsed;
 }
 
 #endif

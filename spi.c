@@ -25,8 +25,6 @@
 #include "shadowRegs.h"
 #include "spi.h"
 
-byte lastSelectCount;
-
 #if SPI_MASTER
 inline void set_spi_data(byte d)
 {
@@ -85,7 +83,17 @@ void spi_init(void)
 	t1con.TMR1CS = 1;
 	t1con.NOT_T1SYNC = 1;  // unsynchronized is probably better.
 	t1con.TMR1ON = 1;  // Now counting cycles on CS.
-	lastSelectCount = tmr1l;
+
+	spiLastSelectCount = tmr1l;
+	
+	// Set up an interrupt when the CK pin changes, and read at that time.
+	SPI_SDI_TRIS.SPI_SDI_PIN = 1;
+	clearSpiReceive();
+	option_reg.INTEDG = SPI_CLOCK_EDGE;
+	intcon.INTE = 1;
+	
+	spiLenUsed = 0;
+	clearSpiReceive();
 	#endif
 }
 
@@ -102,7 +110,8 @@ void spi_write(byte d)
 		d <<= 1;
 		
 		#ifdef SPI_DELAY_US
-		delay_us(SPI_DELAY_US);
+		for (byte j = SPI_DELAY_US / 6; j; --j)
+			nop();
 		#endif
 	}
 	SET_SPI_CLOCK(SPI_CLOCK_IDLE);
@@ -117,6 +126,11 @@ byte spi_read(void)
 	byte result = 0;
 	for (byte i = 0; i != 8; i++) {
 		SET_SPI_CLOCK(SPI_CLOCK_EDGE);
+
+		#ifdef SPI_DELAY_US
+		for (byte j = SPI_DELAY_US / 6; j; --j)
+			nop();
+		#endif
 		
 		// Shift the new data in through the low bit.
 		result <<= 1;
