@@ -33,6 +33,20 @@
 // Pin assignments, etc.
 #include "spi-consts.h"
 
+#ifdef IN_SPI_TJW_H
+ #define SPI_EXTERN
+#else
+ #define SPI_EXTERN  extern
+#endif
+
+#if !MASTER
+  SPI_EXTERN byte spiLastSelectCount;
+  SPI_EXTERN byte spiReceive;
+  SPI_EXTERN byte spiBitsToGo;
+  SPI_EXTERN byte spiInputQ[SPI_QUEUE_LEN];
+  SPI_EXTERN byte spiInputLen;
+#endif
+
 // Initializes the SPI interface on the specified pins.
 void spi_init(void);
 
@@ -59,7 +73,44 @@ byte spi_read(void);
 
 // Returns true if the slave as been reselected since the last read.
 // Clears the condition if it was set.
-bool messageRestarted(void);
+inline bool messageRestarted(void)
+{
+	byte nextCount = tmr1l;
+	bool result = (spiLastSelectCount != nextCount);
+	spiLastSelectCount = nextCount;
+	return result;
+}
+
+inline void clearSpiReceive(void)
+{
+	spiReceive = 0;
+	spiBitsToGo = 8;
+	spiInputLen = 0;
+}
+
+// Call this in the interrupt handler.
+inline void spiInterrupt(void)
+{
+	if (intcon.INTF) {
+		intcon.INTF = 0;
+		spiReceive = (spiReceive << 1) | SPI_SDI_PORT.SPI_SDI_PIN;
+		if (--spiBitsToGo == 0) {
+			if (messageRestarted())
+				spiInputLen = 0;
+			spiInputQ[spiInputLen++] = spiReceive;
+			spiBitsToGo = 8;
+		}
+	}
+}
+
+// Also call this often to catch unusual resets.
+// Returns the number of characters waiting.
+inline byte spiPoll(void)
+{
+	if (messageRestarted())
+		clearSpiReceive();
+	return spiInputLen;
+}
 
 
 #endif
