@@ -31,6 +31,7 @@
 #define __SPI_TJW_H
 
 #include <types-tjw.h>
+#include <string.h>
 
 // Pin assignments, etc.
 #include "spi-consts.h"
@@ -45,9 +46,13 @@
   SPI_EXTERN byte spiQueue[SPI_QUEUE_LEN];
   SPI_EXTERN byte spiLastSelectCount;
   SPI_EXTERN byte spiReceive;
+  SPI_EXTERN byte spiSend;
   SPI_EXTERN byte spiBitsToGo;
   SPI_EXTERN byte spiLenUsed;  // tail of the queue
   SPI_EXTERN byte spiRead;  // head of the queue
+  
+  SPI_EXTERN byte* spiSendBuf;
+  SPI_EXTERN byte spiSendLen;  // if zero, nothing left to send - so send zeros.
 #endif
 
 // Initializes the SPI interface on the specified pins.
@@ -97,11 +102,23 @@ inline void spiInterrupt(void)
 {
 	if (intcon.INTF) {
 		intcon.INTF = 0;
+		
+		// Receive a bit
 		spiReceive = (spiReceive << 1) | SPI_SDI_PORT.SPI_SDI_PIN;
+		
+		// Send a bit
+		SPI_SDO_PORT.SPI_SDO_PIN = (spiSend & 0x80)? 1: 0;
+		spiSend <<= 1;
+		
+		// Handle end of bytes.
 		if (--spiBitsToGo == 0) {
 			if (spiLenUsed <= SPI_QUEUE_LEN) {
 				spiQueue[spiLenUsed++] = spiReceive;
 				spiBitsToGo = 8;
+			}
+			if (spiSendLen) {
+				spiSend = *spiSendBuf;
+				--spiSendLen;				
 			}
 		}
 	}
@@ -115,6 +132,8 @@ inline byte spiPoll(void)
 		clearSpiReceive();
 		spiLenUsed = 0;
 		spiRead = 0;
+		spiSend = 0;
+		spiSendLen = 0;
 	}
 
 	return spiLenUsed - spiRead;
@@ -147,6 +166,29 @@ inline void spiSkip(byte count)
 	spiRead += count;
 	if (spiRead > spiLenUsed)
 		spiRead = spiLenUsed;
+}
+
+// Writes this byte immediately.
+inline void spiWrite(byte data)
+{
+	spiSendLen = 0;
+	spiSend = data;
+}
+
+// Queues up the given data buffer for writing out.
+inline void spiWrite(byte* data, byte count)
+{
+	spiSendBuf = data;
+	spiSendLen = count;
+	
+	if (spiBitsToGo == 8 && count)
+		spiSend = *data;
+}
+
+inline void spiReadBuf(byte* data, byte count)
+{
+	strncpy(data, spiQueue + spiRead, count);
+	spiSkip(count);
 }
 
 #endif

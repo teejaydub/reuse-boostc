@@ -86,7 +86,7 @@ void spi_init(void)
 
 	spiLastSelectCount = tmr1l;
 	
-	// Set up an interrupt when the CK pin changes, and read at that time.
+	// Set up an interrupt when the CK pin changes, and read MOSI that time.
 	SPI_SDI_TRIS.SPI_SDI_PIN = 1;
 	clearSpiReceive();
 	option_reg.INTEDG = SPI_CLOCK_EDGE;
@@ -94,6 +94,13 @@ void spi_init(void)
 	
 	spiLenUsed = 0;
 	clearSpiReceive();
+	
+	// Also write the sent data out the MISO pin in sync with INT.
+	SPI_SDO_TRIS.SPI_SDO_PIN = 0;
+	SPI_SDO_PORT.SPI_SDO_PIN = 0;
+
+	spiSend = 0;
+	spiSendLen = 0;
 	#endif
 }
 
