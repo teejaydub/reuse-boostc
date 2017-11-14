@@ -126,6 +126,18 @@ inline unsigned char fixedTenths(fixed16 f)
 	return FIXED_INTEGRAL(tempFixed);  // Truncate and return.
 }
 
+// Returns the hundredths digit of the fractional part of f.
+// I.e., if f = 1.20, returns 0; 1.24 -> 4; 1.225 -> 3 (rounds up); -1.45 -> 5 (positive).
+inline unsigned char fixedHundredths(fixed16 f)
+{
+	fixed16 tempFixed;
+	tempFixed = fixedFrac(f);  // Just the fractional part, positive.
+	tempFixed *= 100;  // Convert to tenths.
+	tempFixed += FIXED_ONE_HALF;  // Round to the nearest tenth by adding 0.5 (of a tenth).
+	
+	return FIXED_INTEGRAL(tempFixed);  // Truncate and return.
+}
+
 // Return the largest integer <= f, as a fixed-point value.
 // Note that this moves downward for negative numbers, e.g. fixedFloor(-0.5) = -1.
 inline fixed16 fixedFloor(fixed16 f)
