@@ -8,6 +8,8 @@
 	
 	Slave mode requires Timer 1 (without interrupt), and exclusive use of the SPI bus.
 	That is, there can't be any other slaves.
+	It also uses the queue module for a circular input buffer.
+	If the queue fills up, older bytes received will be lost.
 
     Copyright (c) 2010, 2017 by Timothy J. Weber, tw@timothyweber.org.
 
@@ -39,12 +41,14 @@
  #define SPI_EXTERN  extern
 #endif
 
+#if !SPI_MASTER
+ #include "queue.h"
+#endif
+
 #if !MASTER
   SPI_EXTERN byte spiLastSelectCount;
   SPI_EXTERN byte spiReceive;
   SPI_EXTERN byte spiBitsToGo;
-  SPI_EXTERN byte spiInputQ[SPI_QUEUE_LEN];
-  SPI_EXTERN byte spiInputLen;
 #endif
 
 // Initializes the SPI interface on the specified pins.
@@ -85,7 +89,6 @@ inline void clearSpiReceive(void)
 {
 	spiReceive = 0;
 	spiBitsToGo = 8;
-	spiInputLen = 0;
 }
 
 // Call this in the interrupt handler.
@@ -94,10 +97,13 @@ inline void spiInterrupt(void)
 	if (intcon.INTF) {
 		intcon.INTF = 0;
 		spiReceive = (spiReceive << 1) | SPI_SDI_PORT.SPI_SDI_PIN;
-		if (--spiBitsToGo == 0) {
-			if (messageRestarted())
-				spiInputLen = 0;
-			spiInputQ[spiInputLen++] = spiReceive;
+		if (messageRestarted())
+			spiBitsToGo = 7;
+		else if (--spiBitsToGo == 0) {
+			PrePushQueue();
+			*QueueTail() = spiReceive;
+			PushQueue();
+			
 			spiBitsToGo = 8;
 		}
 	}
@@ -107,11 +113,36 @@ inline void spiInterrupt(void)
 // Returns the number of characters waiting.
 inline byte spiPoll(void)
 {
-	if (messageRestarted())
-		clearSpiReceive();
-	return spiInputLen;
+	return queueCount;
 }
 
+// Returns the next character from the queue.
+inline byte spiPeek(void)
+{
+	return *QueueHead();
+}
+
+// Returns the character after the next one from the queue.
+inline byte spiPeekNext(void)
+{
+	return *QueueNextHead();
+}
+
+// Returns and discards the next character from the input queue.
+inline byte spiRead(void)
+{
+	byte result = *QueueHead();
+	
+	PopQueue();
+	return result;
+}
+
+// Discards the given number of characters from the input queue.
+inline void spiSkip(byte count)
+{
+	while (count--)
+		PopQueue();
+}
 
 #endif
 
