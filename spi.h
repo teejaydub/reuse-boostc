@@ -114,12 +114,12 @@ inline void spiInterrupt(void)
 		if (--spiBitsToGo == 0) {
 			if (spiLenUsed <= SPI_QUEUE_LEN) {
 				spiQueue[spiLenUsed++] = spiReceive;
-				spiBitsToGo = 8;
 			}
 			if (spiSendLen) {
-				spiSend = *spiSendBuf;
+				spiSend = *(spiSendBuf++);
 				--spiSendLen;				
 			}
+			spiBitsToGo = 8;
 		}
 	}
 }
@@ -178,11 +178,20 @@ inline void spiWrite(byte data)
 // Queues up the given data buffer for writing out.
 inline void spiWrite(byte* data, byte count)
 {
-	spiSendBuf = data;
-	spiSendLen = count;
-	
-	if (spiBitsToGo == 8 && count)
+	if (spiBitsToGo == 8 && count) {
+		// This is the usual case, if this message is processed while the bus is quiet.
+		// Just set the next byte and continue on later with the bytes after that.
 		spiSend = *data;
+		spiSendBuf = data + 1;
+		spiSendLen = count - 1;
+	} else {
+		// This would be unusual, and might be a sign of other problems,
+		// but if we're in the middle of outputting a byte,
+		// save the whole buffer for later.
+		// (Or, count is zero, which means this has no effect.)
+		spiSendBuf = data;
+		spiSendLen = count;
+	}
 }
 
 inline void spiReadBuf(byte* data, byte count)
