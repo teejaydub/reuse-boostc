@@ -113,7 +113,7 @@ inline bool contains(ByteBuf& bb, char c)
 {
 	byte* bufp = bb.buffer + bb.readIndex;
 	for (byte i = bb.readIndex; i < bb.lenUsed; i++)
-		if (*bufp++ == c)
+		if (*(bufp++) == c)
 			return true;
 	return false;
 }
