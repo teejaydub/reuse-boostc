@@ -114,6 +114,13 @@ inline signed char fixedIntegral(fixed16 f)
 // More efficient.
 #define FIXED_INTEGRAL(f)  (f >> 8)
 
+// Return the largest integer <= f, as a fixed-point value.
+// Note that this moves downward for negative numbers, e.g. fixedFloor(-0.5) = -1.
+inline fixed16 fixedFloor(fixed16 f)
+{
+	return f & 0xFF00;
+}
+
 // Returns the tenths digit of the fractional part of f.
 // I.e., if f = 1.2, returns 2; 1.24 -> 2; 1.25 -> 3 (rounds up); -1.4 -> 4 (positive).
 inline unsigned char fixedTenths(fixed16 f)
@@ -124,25 +131,6 @@ inline unsigned char fixedTenths(fixed16 f)
 	tempFixed += FIXED_ONE_HALF;  // Round to the nearest tenth by adding 0.5 (of a tenth).
 	
 	return FIXED_INTEGRAL(tempFixed);  // Truncate and return.
-}
-
-// Returns the hundredths digit of the fractional part of f.
-// I.e., if f = 1.20, returns 0; 1.24 -> 4; 1.225 -> 3 (rounds up); -1.45 -> 5 (positive).
-inline unsigned char fixedHundredths(fixed16 f)
-{
-	fixed16 tempFixed;
-	tempFixed = fixedFrac(f);  // Just the fractional part, positive.
-	tempFixed *= 100;  // Convert to tenths.
-	tempFixed += FIXED_ONE_HALF;  // Round to the nearest tenth by adding 0.5 (of a tenth).
-	
-	return FIXED_INTEGRAL(tempFixed);  // Truncate and return.
-}
-
-// Return the largest integer <= f, as a fixed-point value.
-// Note that this moves downward for negative numbers, e.g. fixedFloor(-0.5) = -1.
-inline fixed16 fixedFloor(fixed16 f)
-{
-	return f & 0xFF00;
 }
 
 // Returns the integral part of f, as a two's-complement value.
