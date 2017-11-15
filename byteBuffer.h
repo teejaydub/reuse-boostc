@@ -81,6 +81,17 @@ inline bool isEmpty(ByteBuf& bb)
 	return bb.readIndex == bb.lenUsed;
 }
 
+template <int maxLen>
+inline bool isFull(ByteBuf& bb)
+{
+	return bb.lenUsed >= maxLen;
+}
+
+inline byte length(ByteBuf& bb)
+{
+	return bb.lenUsed - bb.readIndex;
+}
+
 // Discards the given number of characters from the input queue.
 inline void skip(ByteBuf& bb, byte count)
 {
@@ -96,6 +107,15 @@ inline void read(ByteBuf& bb, byte* data, byte count)
 {
 	strncpy(data, bb.buffer + bb.readIndex, count);
 	skip(bb, count);
+}
+
+inline bool contains(ByteBuf& bb, char c)
+{
+	byte* bufp = bb.buffer + bb.readIndex;
+	for (byte i = bb.readIndex; i < bb.lenUsed; i++)
+		if (*bufp++ == c)
+			return true;
+	return false;
 }
 
 #endif
