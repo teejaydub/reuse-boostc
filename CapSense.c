@@ -85,7 +85,7 @@ byte IsChannelUsed(byte channel)
 
 void InitCapSense(void)
 {
-	#ifndef _PIC16F886
+	#if !defined(_PIC16F886) && !defined(_PIC16F887)
 	 #error "Need to determine register usage for this algorithm used with this chip."
 	#endif
 	

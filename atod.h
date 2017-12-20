@@ -27,7 +27,7 @@
 
 
 // Initializes the conversion clock to the correct value for the given device frequency, passed as a constant.
-#if defined(_PIC16F886) || defined(_PIC16F688) || defined(_PIC16F916)
+#if defined(_PIC16F886) || defined(_PIC16F887) || defined(_PIC16F688) || defined(_PIC16F916)
  #define ADC_CLOCK_1MHZ  0b00000000
  #define ADC_CLOCK_4MHZ  0b01000000
  #define ADC_CLOCK_8MHZ  0b10000000
@@ -60,7 +60,7 @@ void SetADChannel(byte channel);
 #define ADC_RIGHT_JUSTIFIED  1
 inline void SetADJustification(byte isRightJustified)
 {
-#if defined(_PIC16F886)
+#if defined(_PIC16F886) || defined(_PIC16F887)
 	adcon1.ADFM = isRightJustified;
 #elif defined(_PIC16F688) || defined(_PIC16F916) || defined(_PIC12F683)
 	adcon0.ADFM = isRightJustified;

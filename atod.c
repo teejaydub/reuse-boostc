@@ -24,7 +24,7 @@
 #include "atod.h"
 
 
-#if defined(_PIC16F886)
+#if defined(_PIC16F886) || defined(_PIC16F887)
  #define MORE_THAN_8_CHANNELS
 #elif defined(_PIC16F688) || defined(_PIC16F916) || defined(_PIC12F683)
 #else
