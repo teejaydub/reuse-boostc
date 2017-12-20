@@ -30,15 +30,29 @@
  #define SHADOW_REGS_EXTERN  extern
 #endif
 
+#if defined(_PIC16F887)
+ #define NUM_PORTS  5
+#else
+ #define NUM_PORTS  3
+#endif
+
 SHADOW_REGS_EXTERN byte porta_;
 SHADOW_REGS_EXTERN byte portb_;
 SHADOW_REGS_EXTERN byte portc_;
+#if NUM_PORTS >= 5
+SHADOW_REGS_EXTERN byte portd_;
+SHADOW_REGS_EXTERN byte porte_;
+#endif
 
 // Sets the specified shadowed register, changing only the masked bits.
 #define SET_SHADOW(regName, shadowReg, newValue, mask)  { shadowReg = (shadowReg & (~(mask))) | (newValue & mask); regName = shadowReg; }
 #define SET_SHADOW_A(newValue, mask)  { porta_ = (porta_ & (~(mask))) | (newValue & mask); porta = porta_; }
 #define SET_SHADOW_B(newValue, mask)  { portb_ = (portb_ & (~(mask))) | (newValue & mask); portb = portb_; }
 #define SET_SHADOW_C(newValue, mask)  { portc_ = (portc_ & (~(mask))) | (newValue & mask); portc = portc_; }
+#if NUM_PORTS >= 5
+ #define SET_SHADOW_D(newValue, mask)  { portd_ = (portd_ & (~(mask))) | (newValue & mask); portd = portd_; }
+ #define SET_SHADOW_E(newValue, mask)  { porte_ = (porte_ & (~(mask))) | (newValue & mask); porte = porte_; }
+#endif
 	
 // Sets the given bit in a shadowed port.
 // The bit number must be constant.
@@ -47,6 +61,10 @@ SHADOW_REGS_EXTERN byte portc_;
 #define SET_SHADOW_A_BIT(bit, newValue)  { porta_.bit = newValue; porta = porta_; }
 #define SET_SHADOW_B_BIT(bit, newValue)  { portb_.bit = newValue; portb = portb_; }
 #define SET_SHADOW_C_BIT(bit, newValue)  { portc_.bit = newValue; portc = portc_; }
+#if NUM_PORTS >= 5
+ #define SET_SHADOW_D_BIT(bit, newValue)  { portd_.bit = newValue; portd = portd_; }
+ #define SET_SHADOW_E_BIT(bit, newValue)  { porte_.bit = newValue; porte = porte_; }
+#endif
 	
 // Toggles the given bit in a shadowed port.
 // The bit number must be constant.
