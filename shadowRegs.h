@@ -30,45 +30,87 @@
  #define SHADOW_REGS_EXTERN  extern
 #endif
 
-#if defined(_PIC16F887)
+#if defined(_PIC16F1789) || defined(_PIC16F887)
  #define NUM_PORTS  5
 #else
  #define NUM_PORTS  3
 #endif
 
-SHADOW_REGS_EXTERN byte porta_;
-SHADOW_REGS_EXTERN byte portb_;
-SHADOW_REGS_EXTERN byte portc_;
-#if NUM_PORTS >= 5
-SHADOW_REGS_EXTERN byte portd_;
-SHADOW_REGS_EXTERN byte porte_;
+// Later chips have LATx registers that make all of this unnecessary.
+#if defined(_PIC16F1789)
+ #define HAS_LATCH
+#endif
+
+#ifdef HAS_LATCH
+	// Just use the latch registers as the shadow registers.
+	#define porta_  lata
+	#define portb_  latb
+	#define portc_  latc
+	#if NUM_PORTS >= 5
+	#define portd_  latd
+	#define porte_  late
+	#endif
+#else
+	SHADOW_REGS_EXTERN byte porta_;
+	SHADOW_REGS_EXTERN byte portb_;
+	SHADOW_REGS_EXTERN byte portc_;
+	#if NUM_PORTS >= 5
+	SHADOW_REGS_EXTERN byte portd_;
+	SHADOW_REGS_EXTERN byte porte_;
+	#endif
 #endif
 
 // Sets the specified shadowed register, changing only the masked bits.
-#define SET_SHADOW(regName, shadowReg, newValue, mask)  { shadowReg = (shadowReg & (~(mask))) | (newValue & mask); regName = shadowReg; }
-#define SET_SHADOW_A(newValue, mask)  { porta_ = (porta_ & (~(mask))) | (newValue & mask); porta = porta_; }
-#define SET_SHADOW_B(newValue, mask)  { portb_ = (portb_ & (~(mask))) | (newValue & mask); portb = portb_; }
-#define SET_SHADOW_C(newValue, mask)  { portc_ = (portc_ & (~(mask))) | (newValue & mask); portc = portc_; }
-#if NUM_PORTS >= 5
- #define SET_SHADOW_D(newValue, mask)  { portd_ = (portd_ & (~(mask))) | (newValue & mask); portd = portd_; }
- #define SET_SHADOW_E(newValue, mask)  { porte_ = (porte_ & (~(mask))) | (newValue & mask); porte = porte_; }
+#ifdef HAS_LATCH
+	#define SET_SHADOW(regName, shadowReg, newValue, mask)  { shadowReg = (shadowReg & (~(mask))) | (newValue & mask); }
+	#define SET_SHADOW_A(newValue, mask)  { porta_ = (porta_ & (~(mask))) | (newValue & mask); }
+	#define SET_SHADOW_B(newValue, mask)  { portb_ = (portb_ & (~(mask))) | (newValue & mask); }
+	#define SET_SHADOW_C(newValue, mask)  { portc_ = (portc_ & (~(mask))) | (newValue & mask); }
+	#if NUM_PORTS >= 5
+	 #define SET_SHADOW_D(newValue, mask)  { portd_ = (portd_ & (~(mask))) | (newValue & mask); }
+	 #define SET_SHADOW_E(newValue, mask)  { porte_ = (porte_ & (~(mask))) | (newValue & mask); }
+	#endif
+#else
+	#define SET_SHADOW(regName, shadowReg, newValue, mask)  { shadowReg = (shadowReg & (~(mask))) | (newValue & mask); regName = shadowReg; }
+	#define SET_SHADOW_A(newValue, mask)  { porta_ = (porta_ & (~(mask))) | (newValue & mask); porta = porta_; }
+	#define SET_SHADOW_B(newValue, mask)  { portb_ = (portb_ & (~(mask))) | (newValue & mask); portb = portb_; }
+	#define SET_SHADOW_C(newValue, mask)  { portc_ = (portc_ & (~(mask))) | (newValue & mask); portc = portc_; }
+	#if NUM_PORTS >= 5
+	 #define SET_SHADOW_D(newValue, mask)  { portd_ = (portd_ & (~(mask))) | (newValue & mask); portd = portd_; }
+	 #define SET_SHADOW_E(newValue, mask)  { porte_ = (porte_ & (~(mask))) | (newValue & mask); porte = porte_; }
+	#endif
 #endif
 	
 // Sets the given bit in a shadowed port.
 // The bit number must be constant.
 // NOTE: When newValue depends on shadowReg, BoostC seems to generate bad code!
-#define SET_SHADOW_BIT(regName, shadowReg, bit, newValue)  { shadowReg.bit = newValue; regName = shadowReg; }
-#define SET_SHADOW_A_BIT(bit, newValue)  { porta_.bit = newValue; porta = porta_; }
-#define SET_SHADOW_B_BIT(bit, newValue)  { portb_.bit = newValue; portb = portb_; }
-#define SET_SHADOW_C_BIT(bit, newValue)  { portc_.bit = newValue; portc = portc_; }
-#if NUM_PORTS >= 5
- #define SET_SHADOW_D_BIT(bit, newValue)  { portd_.bit = newValue; portd = portd_; }
- #define SET_SHADOW_E_BIT(bit, newValue)  { porte_.bit = newValue; porte = porte_; }
+#ifdef HAS_LATCH
+	#define SET_SHADOW_BIT(regName, shadowReg, bit, newValue)  { shadowReg.bit = newValue; }
+	#define SET_SHADOW_A_BIT(bit, newValue)  { porta_.bit = newValue; }
+	#define SET_SHADOW_B_BIT(bit, newValue)  { portb_.bit = newValue; }
+	#define SET_SHADOW_C_BIT(bit, newValue)  { portc_.bit = newValue; }
+	#if NUM_PORTS >= 5
+	 #define SET_SHADOW_D_BIT(bit, newValue)  { portd_.bit = newValue; }
+	 #define SET_SHADOW_E_BIT(bit, newValue)  { porte_.bit = newValue; }
+	#endif
+#else
+	#define SET_SHADOW_BIT(regName, shadowReg, bit, newValue)  { shadowReg.bit = newValue; regName = shadowReg; }
+	#define SET_SHADOW_A_BIT(bit, newValue)  { porta_.bit = newValue; porta = porta_; }
+	#define SET_SHADOW_B_BIT(bit, newValue)  { portb_.bit = newValue; portb = portb_; }
+	#define SET_SHADOW_C_BIT(bit, newValue)  { portc_.bit = newValue; portc = portc_; }
+	#if NUM_PORTS >= 5
+	 #define SET_SHADOW_D_BIT(bit, newValue)  { portd_.bit = newValue; portd = portd_; }
+	 #define SET_SHADOW_E_BIT(bit, newValue)  { porte_.bit = newValue; porte = porte_; }
+	#endif
 #endif
 	
 // Toggles the given bit in a shadowed port.
 // The bit number must be constant.
-#define TOGGLE_SHADOW_BIT(regName, shadowReg, bit)  { shadowReg ^= (1 << bit); regName = shadowReg; }
+#ifdef HAS_LATCH
+	#define TOGGLE_SHADOW_BIT(regName, shadowReg, bit)  { shadowReg ^= (1 << bit); }
+#else
+	#define TOGGLE_SHADOW_BIT(regName, shadowReg, bit)  { shadowReg ^= (1 << bit); regName = shadowReg; }
+#endif
 
 #endif
 //_TJW_SHADOWREGS_H

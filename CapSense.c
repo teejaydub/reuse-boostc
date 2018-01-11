@@ -55,11 +55,11 @@ byte csButton;
 inline void SetCapSenseChannel(void)
 {
 	// In addition to selecting the channel,
-	// these vaules connect the comparators to the right voltage references,
+	// these values connect the comparators to the right voltage references,
 	// and set their outputs to the inputs of the SR latch.
 	cm1con0 = 0x94 + currentCapSenseChannel;
 	
-	// This also sets comparator's 2 output to appear on the C2OUT pin, which
+	// This also sets comparator 2's output to appear on the C2OUT pin, which
 	// is routed to charge and discharge all of the sensors in parallel.
 	cm2con0 = 0xA0 + currentCapSenseChannel;
 }
@@ -85,16 +85,13 @@ byte IsChannelUsed(byte channel)
 
 void InitCapSense(void)
 {
-	#if !defined(_PIC16F886) && !defined(_PIC16F887)
-	 #error "Need to determine register usage for this algorithm used with this chip."
-	#endif
-	
+#if defined(_PIC16F886) || defined(_PIC16F887)
 	// Set up the relaxation oscillator.
 	// Values taken from Appendix A of Microchip AN1101.
 	cm2con1 = 0x32;
 	srcon = 0xF0;
 	vrcon = 0x8D;  // Enable the voltage reference, in the low range, as 21/32 of Vdd.
-	
+
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
 	ansel.0 = 1;  // on RA0, AN0
 	trisa.0 = 1;
@@ -112,9 +109,6 @@ void InitCapSense(void)
 	trisb.1 = 1;
 	#endif
 
-	// Set current to the first one we're using.
-	currentCapSenseChannel = FIRST_CAPSENSE_CHANNEL;
-
 	// The low voltage reference is always used, and is on RA2, AN2.
 	ansel.2 = 1;
 	trisa.2 = 1;
@@ -127,7 +121,16 @@ void InitCapSense(void)
 	
 	// Timer 1 takes its input from the T1CKI pin.
 	t1con.TMR1CS = 1;
+	#elif defined(_PIC16F1789)
+	// These won't work, but they should do no harm for now.
+	cm2con1 = 0x32;
+#else
+	#error "Need to determine register usage for this algorithm used with this chip."
+#endif
 	
+	// Set current to the first one we're using.
+	currentCapSenseChannel = FIRST_CAPSENSE_CHANNEL;
+
 	// Set up the interrupt on TMR0 overflow.
 	// It runs free, and we check TMR1's value on each TMR0 overflow interrupt.
 	InitUiTime_Timer0();
@@ -289,6 +292,7 @@ byte CapSenseISR(void)
 			//accumulateMax<CapSenseReading>(&csBin[currentCapSenseChannel][csCurrentBin], reading);
 			// That works, but the resulting function call uses one too many stack levels.
 			currentMax = &csBin[currentCapSenseChannel][csCurrentBin];
+			
 			if (reading > *currentMax)
 				*currentMax = reading;
 		}

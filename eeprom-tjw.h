@@ -45,4 +45,5 @@ inline void wait_eeprom_write(void)
 	// Wait for the write to complete.
 	while (!EE_PIR.EEIF)
 		clear_wdt();
+	EE_PIR.EEIF = 0;
 }

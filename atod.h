@@ -45,11 +45,20 @@
  {
 	 ansel = (ansel & 0b00001111) | adcClock;
  }
+#elif defined (_PIC16F1789)
+ #define ADC_CLOCK_1MHZ  0b00000000
+ #define ADC_CLOCK_4MHZ  0b01000000
+ #define ADC_CLOCK_8MHZ  0b00010000
+ inline void InitADClock(byte adcClock)
+ {
+	 adcon1 = (adcon1 & 0b01110000) | adcClock;
+ }
 #else
- #error "Need to define how many channels this PIC has."
+ #error "Need to define how to set an appropriate A/D clock rate."
 #endif
 
 // Select the given A/D channel.
+// On CHANNELS_BY_PORT chips, number the ones on port A from 0-7, and B from 8-15.
 // Also requires that the corresponding TRIS register bit be set.
 void SetADChannel(byte channel);
 
@@ -60,7 +69,7 @@ void SetADChannel(byte channel);
 #define ADC_RIGHT_JUSTIFIED  1
 inline void SetADJustification(byte isRightJustified)
 {
-#if defined(_PIC16F886) || defined(_PIC16F887)
+#if defined(_PIC16F1789) || defined(_PIC16F886) || defined(_PIC16F887)
 	adcon1.ADFM = isRightJustified;
 #elif defined(_PIC16F688) || defined(_PIC16F916) || defined(_PIC12F683)
 	adcon0.ADFM = isRightJustified;

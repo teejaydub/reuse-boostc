@@ -24,35 +24,47 @@
 #include "atod.h"
 
 
-#if defined(_PIC16F886) || defined(_PIC16F887)
+#if defined(_PIC16F1789) 
+ // In this new paradigm, you no longer refer to the A/D channel, you just refer to the port and pin.
+ #define CHANNELS_BY_PORT
+#elif defined(_PIC16F886) || defined(_PIC16F887)
  #define MORE_THAN_8_CHANNELS
 #elif defined(_PIC16F688) || defined(_PIC16F916) || defined(_PIC12F683)
 #else
  #error "Need to define how many channels this PIC has."
 #endif
 
-
-// Select the given A/D channel.
-// Also requires that the corresponding TRIS register bit be set.
 void SetADChannel(byte channel)
 {
-#ifdef MORE_THAN_8_CHANNELS
-	if (channel > 7) {
-		anselh = BITMASK(channel - 8);
+#if defined(CHANNELS_BY_PORT)
+	if (channel < 8) {
+		ansela = BITMASK(channel);
 	} else {
-#endif
-#ifdef _PIC12F683
-		ansel = (ansel & 0x01110000) | BITMASK(channel);  // preserve the clock select bits, which are stored here
-#else
-		ansel = BITMASK(channel);
-#endif
-#ifdef MORE_THAN_8_CHANNELS
+		anselb = BITMASK(channel - 8);
 	}
+#else
+	#if MORE_THAN_8_CHANNELS
+		if (channel > 7) {
+			anselh = BITMASK(channel - 8);
+		} else {
+	#endif
+	#ifdef _PIC12F683
+			ansel = (ansel & 0x01110000) | BITMASK(channel);  // preserve the clock select bits, which are stored here
+	#else
+			ansel = BITMASK(channel);
+	#endif
+	#ifdef MORE_THAN_8_CHANNELS
+		}
+	#endif
 #endif
 	
 	pir1.ADIF = 0;
 	
+#ifdef _PIC16F1789
+	adcon0 = (adcon0 & 0b10000000) | (channel << 2);
+#else
 	adcon0 = (adcon0 & 0b11000000) | (channel << 2);  // keep current justification and reference (or clock for 16F886), !ADON, !GO.
+#endif
 #ifdef _PIC16F886
 	adcon1 = (adcon1 & 0b10000000);  // Ref = Vss to Vdd, preserve justification.
 #endif
@@ -60,17 +72,27 @@ void SetADChannel(byte channel)
 
 void TurnOffADChannel(byte channel)
 {
-#ifdef MORE_THAN_8_CHANNELS
-	if (channel > 7) {
-		anselh &= ~(BITMASK(channel - 8));
-	} else {
+#if defined(CHANNELS_BY_PORT)
+	ansela = 0;
+	anselb = 0;
+#else
+	#if MORE_THAN_8_CHANNELS
+		if (channel > 7) {
+			anselh &= ~(BITMASK(channel - 8));
+		} else {
+	#endif
+			ansel &= ~(BITMASK(channel));
+	#ifdef MORE_THAN_8_CHANNELS
+		}
+	#endif
 #endif
-		ansel &= ~(BITMASK(channel));
-#ifdef MORE_THAN_8_CHANNELS
-	}
-#endif
-	
+		
+#ifdef _PIC16F1789
+	adcon0 = (adcon0 & 0b10000000) | (channel << 2);
+#else
 	adcon0 = (adcon0 & 0b11000000) | (channel << 2);  // and right-justified, !ADON, !GO, keep the existing clock.
+		// Shouldn't this clear all the address bits, not leave it selected?
+#endif
 }
 
 // Blocks the required settling time, starts a conversion, and waits for it to finish.

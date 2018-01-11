@@ -28,6 +28,7 @@
 	PIC12F629
 	PIC12F675
 	PIC12F683
+	PIC16F1789
 	PIC16F688
 	PIC16F690
 	PIC16F916
@@ -36,7 +37,7 @@
 	PIC18F2620
 */
 
-#if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683) 
+#if defined(_PIC12F675) || defined(_PIC16F1789) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683) 
 #elif defined(_PIC18F2320) || defined(_PIC18F2620) || defined(_PIC16F690) || defined(_PIC16F883) || defined(_PIC16F886) || defined(_PIC16F887)
 #elif defined(_PIC18F1320) || defined(_PIC18F2550)
 	// New chips supported must be listed here.
@@ -55,6 +56,10 @@ inline void DisablePeripherals(void)
 		cmcon = 7;
 	#endif
 	
+	#if defined(_PIC16F1789)
+		// Comparators are disabled at startup.
+	#endif
+	
 	#if defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683)
 		cmcon0 = 7;
 	#endif
@@ -68,6 +73,11 @@ inline void DisablePeripherals(void)
 	// Disable A/D.
 	#if defined(_PIC12F675) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683) || defined(_PIC16F690) || defined(_PIC16F883) || defined(_PIC16F886) || defined(_PIC16F887)
 		ansel = 0;
+	#endif
+	
+	#if defined(_PIC16F1789)
+		// A/D is disabled on startup, but disconnect all channels just to be sure.
+		adcon0 = 0x50;  // CHS = 10100
 	#endif
 	
 	#if defined(_PIC16F690) || defined(_PIC16F883) || defined(_PIC16F886) || defined(_PIC16F887)
