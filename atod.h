@@ -53,6 +53,14 @@
  {
 	 adcon1 = (adcon1 & 0b01110000) | adcClock;
  }
+#elif defined (_PIC18F45K22)
+ #define ADC_CLOCK_1MHZ  0b00000000
+ #define ADC_CLOCK_4MHZ  0b00000100
+ #define ADC_CLOCK_8MHZ  0b00000001
+ inline void InitADClock(byte adcClock)
+ {
+	 adcon2 = (adcon2 & 0b11111000) | adcClock;
+ }
 #else
  #error "Need to define how to set an appropriate A/D clock rate."
 #endif
@@ -73,6 +81,8 @@ inline void SetADJustification(byte isRightJustified)
 	adcon1.ADFM = isRightJustified;
 #elif defined(_PIC16F688) || defined(_PIC16F916) || defined(_PIC12F683)
 	adcon0.ADFM = isRightJustified;
+#elif defined(_PIC18F45K22)
+	adcon2.ADFM = isRightJustified;
 #else
  #error "Need to define how to set the justification on this PIC."
 #endif

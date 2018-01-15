@@ -15,6 +15,12 @@
 #include "CapSense.h"
 #include "CapSense-consts.h"
 
+// Some equivalent registers that are just named differently.
+#ifdef _PIC18F45K22
+    #define ansel  ansela
+    #define anselh  anselb
+    #define tmr0  tmr0l
+#endif
  
 CapSenseReading csReadings[MAX_CAPSENSE_CHANNELS];
 
@@ -85,12 +91,20 @@ byte IsChannelUsed(byte channel)
 
 void InitCapSense(void)
 {
-#if defined(_PIC16F886) || defined(_PIC16F887)
-	// Set up the relaxation oscillator.
-	// Values taken from Appendix A of Microchip AN1101.
-	cm2con1 = 0x32;
-	srcon = 0xF0;
-	vrcon = 0x8D;  // Enable the voltage reference, in the low range, as 21/32 of Vdd.
+#if defined(_PIC16F886) || defined(_PIC16F887) || defined(_PIC18F45K22)
+    // Set up the relaxation oscillator.
+    #if defined(_PIC18F45K22)
+        cm2con1 = 0x30;
+        srcon0 = 0x80;  // enable, it; all internal connections.
+        srcon1 = 0x12;  // C1 output sets; C2 output resets.
+        vrefcon1 = 80;  // Turn DAC on, ratiometric from Vss to Vdd.
+        vrefcon2 = 21;  // 21/32 of Vdd.
+    #else
+        // Values taken from Appendix A of Microchip AN1101.
+        cm2con1 = 0x32;
+        srcon = 0xF0;
+        vrcon = 0x8D;  // Enable the voltage reference, in the low range, as 21/32 of Vdd.
+    #endif
 
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
 	ansel.0 = 1;  // on RA0, AN0
@@ -120,8 +134,13 @@ void InitCapSense(void)
 	trisc.0 = 1;
 	
 	// Timer 1 takes its input from the T1CKI pin.
-	t1con.TMR1CS = 1;
-	#elif defined(_PIC16F1789)
+	#if defined(_PIC18F45K22)
+        t1con.TMR1CS1 = 1;
+        t1con.TMR1CS0 = 0;
+	#else
+        t1con.TMR1CS = 1;
+    #endif
+#elif defined(_PIC16F1789)
 	// These won't work, but they should do no harm for now.
 	cm2con1 = 0x32;
 #else
@@ -167,6 +186,7 @@ byte GetCapSenseButton(void)
 {
 	byte result = csButton;
 	csButton = NO_CAPSENSE_BUTTONS;
+	
 	return result;
 }
 
@@ -499,9 +519,11 @@ byte CapSenseContinueCalibrate(void)
 		
 		// Copy intermediate results to the start of EEPROM, so they can be conveniently read out.
 		// Overwrites whatever's there (ASCII table for the display at the moment).
+		#if 0
 		write_eeprom_block(0, (char*) csMaxWaiting, sizeof(csMaxWaiting));
 		write_eeprom_block(sizeof(csMaxWaiting), (char*) csMaxOthers, sizeof(csMaxOthers));
 		write_eeprom_block(sizeof(csMaxWaiting) + sizeof(csMaxOthers), (char*) csMaxHolding, sizeof(csMaxHolding));
+		#endif
 	
 		// Signal when done.
 		return false;

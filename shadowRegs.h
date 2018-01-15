@@ -30,14 +30,14 @@
  #define SHADOW_REGS_EXTERN  extern
 #endif
 
-#if defined(_PIC16F1789) || defined(_PIC16F887)
+#if defined(_PIC16F1789) || defined(_PIC16F887) || defined(_PIC18F45K22)
  #define NUM_PORTS  5
 #else
  #define NUM_PORTS  3
 #endif
 
 // Later chips have LATx registers that make all of this unnecessary.
-#if defined(_PIC16F1789)
+#if defined(_PIC16F1789) || defined(_PIC18F45K22)
  #define HAS_LATCH
 #endif
 

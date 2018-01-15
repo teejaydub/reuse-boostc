@@ -35,11 +35,12 @@
 	PIC18F2320
 	PIC18F2550
 	PIC18F2620
+	PIC18F45K22
 */
 
 #if defined(_PIC12F675) || defined(_PIC16F1789) || defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683) 
 #elif defined(_PIC18F2320) || defined(_PIC18F2620) || defined(_PIC16F690) || defined(_PIC16F883) || defined(_PIC16F886) || defined(_PIC16F887)
-#elif defined(_PIC18F1320) || defined(_PIC18F2550)
+#elif defined(_PIC18F1320) || defined(_PIC18F2550) || defined(_PIC18F45K22)
 	// New chips supported must be listed here.
 #else
 	#error "chipinit.h: Chip not recognized; check code and add this chip's required settings"
@@ -56,18 +57,8 @@ inline void DisablePeripherals(void)
 		cmcon = 7;
 	#endif
 	
-	#if defined(_PIC16F1789)
-		// Comparators are disabled at startup.
-	#endif
-	
 	#if defined(_PIC16F916) || defined(_PIC16F688) || defined(_PIC12F683)
 		cmcon0 = 7;
-	#endif
-	
-	#if defined(_PIC16F883) || defined(_PIC16F886) || defined(_PIC16F887)
-		// These are the start-up defaults.
-		//cm1con0 = 0; 
-		//cm2con0 = 0;
 	#endif
 	
 	// Disable A/D.
@@ -75,15 +66,29 @@ inline void DisablePeripherals(void)
 		ansel = 0;
 	#endif
 	
-	#if defined(_PIC16F1789)
-		// A/D is disabled on startup, but disconnect all channels just to be sure.
-		adcon0 = 0x50;  // CHS = 10100
+	#if defined(_PIC18F45K22) || defined(_PIC16F1789)
+		ansela = 0;
+		anselb = 0;
+		#ifdef ANSELC
+		anselc = 0;
+		#endif
+		#ifdef ANSELD
+		anseld = 0;
+		#endif
+		#ifdef ANSELE
+		ansele = 0;
+		#endif
 	#endif
 	
 	#if defined(_PIC16F690) || defined(_PIC16F883) || defined(_PIC16F886) || defined(_PIC16F887)
 		anselh = 0;
 	#endif
 
+	#if defined(_PIC16F1789)
+		// A/D is disabled on startup, but disconnect all channels just to be sure.
+		adcon0 = 0x50;  // CHS = 10100
+	#endif
+	
 	#if defined(_PIC18F2320) || defined(_PIC18F2620) || defined(_PIC18F1320) || defined(_PIC18F2550)
 		adcon1 = 0x0F;  // all digital inputs	
 	#endif

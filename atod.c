@@ -24,7 +24,7 @@
 #include "atod.h"
 
 
-#if defined(_PIC16F1789) 
+#if defined(_PIC16F1789) || defined(_PIC18F45K22)
  // In this new paradigm, you no longer refer to the A/D channel, you just refer to the port and pin.
  #define CHANNELS_BY_PORT
 #elif defined(_PIC16F886) || defined(_PIC16F887)
@@ -36,10 +36,42 @@
 
 void SetADChannel(byte channel)
 {
-#if defined(CHANNELS_BY_PORT)
+#if defined(_PIC18F45K22)
+    ansela = 0;
+    anselb = 0;
+    anselc = 0;
+    anseld = 0;
+    ansele = 0;
+	// Seemingly-random assignment of channels to port pins.
+	if (channel <= 3) {
+		ansela = BITMASK(channel);
+	} else if (channel == 4) {
+		ansela = BITMASK(5);
+	} else if (channel >= 5 && channel <= 7) {
+		ansele = BITMASK(channel - 5);
+	} else if (channel == 8) {
+		anselb = BITMASK(2);
+	} else if (channel == 9) {
+		anselb = BITMASK(3);
+	} else if (channel == 10) {
+		anselb = BITMASK(1);
+	} else if (channel == 11) {
+		anselb = BITMASK(4);
+	} else if (channel == 12) {
+		anselb = BITMASK(0);
+	} else if (channel == 13) {
+		anselb = BITMASK(5);
+	} else if (channel >= 14 && channel <= 19) {
+		anselc = BITMASK(channel - 12);
+	} else if (channel >= 20 && channel <= 27) {
+		anseld = BITMASK(channel - 20);
+	}
+#elif defined(CHANNELS_BY_PORT)
 	if (channel < 8) {
 		ansela = BITMASK(channel);
+		anselb = 0;
 	} else {
+		ansela = 0;
 		anselb = BITMASK(channel - 8);
 	}
 #else
@@ -60,7 +92,9 @@ void SetADChannel(byte channel)
 	
 	pir1.ADIF = 0;
 	
-#ifdef _PIC16F1789
+#if defined(_PIC16F1789)
+	adcon0 = (adcon0 & 0b10000011) | (channel << 2);
+#elif defined(_PIC16F1789)
 	adcon0 = (adcon0 & 0b10000000) | (channel << 2);
 #else
 	adcon0 = (adcon0 & 0b11000000) | (channel << 2);  // keep current justification and reference (or clock for 16F886), !ADON, !GO.
@@ -75,8 +109,17 @@ void TurnOffADChannel(byte channel)
 #if defined(CHANNELS_BY_PORT)
 	ansela = 0;
 	anselb = 0;
+	#ifdef ANSELC
+	anselc = 0;
+	#endif
+	#ifdef ANSELD
+	anseld = 0;
+	#endif
+	#ifdef ANSELE
+	ansele = 0;
+	#endif
 #else
-	#if MORE_THAN_8_CHANNELS
+	#ifdef MORE_THAN_8_CHANNELS
 		if (channel > 7) {
 			anselh &= ~(BITMASK(channel - 8));
 		} else {
@@ -120,10 +163,14 @@ void AcquireAndConvertAD(void)
 #ifndef ATOD_INLINE
 unsigned short GetADValueShort(byte channel)
 {
+#if 0
+    return 0;
+#else
 	ReadADChannel(channel);
 	
 	unsigned short result;
 	MAKESHORT(result, adresl, adresh);
 	return result;
+#endif
 }
 #endif

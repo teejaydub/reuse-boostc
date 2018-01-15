@@ -22,6 +22,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// Define REF_BUG if there's a bug with references that affects this module.
+// Was showing up with SourceBoost 7.42 and the PIC18F45K22.
+// References will be mocked up via pointers instead.
+
 #ifndef __BYTE_BUFFER_H
 #define __BYTE_BUFFER_H
 
@@ -42,11 +46,20 @@ inline void init(ByteBuf& bb, byte* buffer)
 	bb.readIndex = 0;
 }
 
+#ifndef REF_BUG
 inline void clear(ByteBuf& bb)
 {
 	bb.lenUsed = 0;
 	bb.readIndex = 0;
 }
+#else
+#define clear(b)  clearP(&b)
+inline void clearP(ByteBuf* bb)
+{
+	bb->lenUsed = 0;
+	bb->readIndex = 0;
+}
+#endif
 
 // Pushes a character onto the end of the buffer.
 // Does nothing if the buffer has already grown to maxLen.
@@ -58,11 +71,20 @@ inline void push(ByteBuf& bb, byte b)
 	}
 }
 
+#ifndef REF_BUG
 inline byte peek(ByteBuf& bb)
 {
 	return bb.buffer[bb.readIndex];
 }
+#else
+#define peek(b)  peekP(&b)
+inline byte peekP(ByteBuf* bb)
+{
+	return bb->buffer[bb->readIndex];
+}
+#endif
 
+#ifndef REF_BUG
 inline byte pop(ByteBuf& bb)
 {
 	byte result = peek(bb);
@@ -75,6 +97,21 @@ inline byte pop(ByteBuf& bb)
 		
 	return result;
 }
+#else
+#define pop(b)  popP(&b)
+inline byte popP(ByteBuf* bb)
+{
+	byte result = peekP(bb);
+	if (++bb->readIndex > bb->lenUsed)
+		// Constrain to the used length of the buffer.
+		bb->readIndex = bb->lenUsed;
+	if (bb->readIndex == bb->lenUsed)
+		// Reset back to the beginning when it's empty.
+		clearP(bb);
+		
+	return result;
+}
+#endif
 
 inline bool isEmpty(ByteBuf& bb)
 {
