@@ -1,11 +1,14 @@
 /* CapSense.h
 	Using capacitive touch sensing to simulate up to 4 pushbuttons.
 	Follows the guidelines set out in Microchip's AN1101 and AN1103.
+    Uses the Charge Time Measurement approach.
 	
 	Takes over the following resources:
 		comparators 1 and 2
 		the S-R latch
-		the voltage reference
+		the fixed voltage reference (FVR)
+        the digital-to-analog converter (DAC), if available
+            (or, optionally, an external divider)
 		timers 0 and 1
 		
 	Requires:

@@ -63,11 +63,27 @@ inline void SetCapSenseChannel(void)
 	// In addition to selecting the channel,
 	// these values connect the comparators to the right voltage references,
 	// and set their outputs to the inputs of the SR latch.
-	cm1con0 = 0x94 + currentCapSenseChannel;
+	cm1con0 = BITMASK(C1ON)  // enabled
+        // non-inverted output, not output to pin
+        | BITMASK(C1POL)  // inverted output polarity
+        #ifdef _PIC18F45K22
+        | BITMASK(C1SP)  // high speed
+        #endif
+        | BITMASK(C1R)  // C1Vin+ connects to C1Vref
+        | currentCapSenseChannel;
 	
 	// This also sets comparator 2's output to appear on the C2OUT pin, which
 	// is routed to charge and discharge all of the sensors in parallel.
-	cm2con0 = 0xA0 + currentCapSenseChannel;
+    cm2con0 = 
+        BITMASK(C2ON)  // enabled
+        // non-inverted logic, not output to pin, non-inverted output polarity
+        #ifdef _PIC18F45K22
+        | BITMASK(C2SP)  // high speed
+        #endif
+        #ifdef INTERNAL_LOW_REF
+        | BITMASK(C2R)  // C2Vin+ connects to C2Vref instead of external C12IN+
+        #endif
+        | currentCapSenseChannel;
 }
 
 inline void RestartCapSenseTimer(void)
@@ -93,17 +109,38 @@ void InitCapSense(void)
 {
 #if defined(_PIC16F886) || defined(_PIC16F887) || defined(_PIC18F45K22)
     // Set up the relaxation oscillator.
+    // It's driven by C1, which detects the upper voltage threshold,
+    // and C2, which detects the lower.
     #if defined(_PIC18F45K22)
-        cm2con1 = 0x30;
-        srcon0 = 0x80;  // enable, it; all internal connections.
-        srcon1 = 0x12;  // C1 output sets; C2 output resets.
-        vrefcon1 = 80;  // Turn DAC on, ratiometric from Vss to Vdd.
-        vrefcon2 = 21;  // 21/32 of Vdd.
+        #ifdef INTERNAL_LOW_REF
+            // Use the FVR for both high and low refs.  This gives us some immunity from line noise?
+            // It also omits the external voltage reference, saving a few (cheap) parts.
+            vrefcon0 = BITMASK(FVREN)  // Turn the FVR on
+                | BITMASK(FVRS1) | BITMASK(FVRS0);  // set to 4.096 V
+            vrefcon1 = BITMASK(DACEN)  // Turn DAC on
+                | BITMASK(DACPSS1);  // ratiometric from Vss to FVRBUF1.
+            vrefcon2 = 16;  // 16/32 of Vdd = 2.048 V of swing, from 2.048 V (from the DAC) to 4.096 V (from the FVR).
+            cm2con1 = BITMASK(C1RSEL)  // Use the FVR as C1Vref
+                // use DAC for C2Vref
+                | BITMASK(C1HYS) | BITMASK(C2HYS);  // use hysteresis on both
+                // outputs are asynchronous.
+        #else
+            vrefcon1 = BITMASK(DACEN);  // Turn DAC on, ratiometric from Vss to Vdd.
+            vrefcon2 = 21;  // 21/32 of Vdd = 2.0 V of swing, from 5/4 = 1.25 V (from the ext ref) to 21/32 * 5 V = 3.28 V (from the DAC).
+            cm2con1 =  // Use the DAC for C1Vref.  Don't care about C2Vref; it's unused.
+                BITMASK(C1HYS) | BITMASK(C2HYS);  // use hysteresis on both
+                // outputs are asynchronous.
+        #endif
+        srcon0 = BITMASK(SRLEN)  // enable the S-R latch
+            | BITMASK(SRNQEN);  // enable its negated output on SRNQ
+        srcon1 = BITMASK(SRSC1E)  // C1 output sets the S-R latch
+            | BITMASK(SRRC2E);  // C2 output resets the S-R latch
     #else
         // Values taken from Appendix A of Microchip AN1101.
         cm2con1 = 0x32;
-        srcon = 0xF0;
+        srcon = 0xF0;  // C1 output sets the S-R latch; C2 output resets.
         vrcon = 0x8D;  // Enable the voltage reference, in the low range, as 21/32 of Vdd.
+        // The external voltage divider must be attached to comparator 2's + input, often RA2.
     #endif
 
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
