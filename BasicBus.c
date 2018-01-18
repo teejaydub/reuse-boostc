@@ -27,8 +27,9 @@
 
 #include "byteBuffer.h"
 
-#define LOGGING
-// #undef LOGGING
+// Define this for concise logging about commands received and processed.
+// Define it to "2" to also see every character received.
+// #define LOGGING  1
 
 #define SERIAL_BUFLEN  32
 
@@ -81,6 +82,8 @@ void InitializeBasicBus(byte paramCount, unsigned short* params)
     RX_ANSEL.RX_PIN = 0;
 
 	serInState = IN_LINE_START;
+
+    bbMasterStatus = ' ';  // A convenient default status.
 	
 	init(serialInput, serialInputBuffer);
 	init(serialOutput, serialOutputBuffer);
@@ -268,7 +271,7 @@ byte BasicBusISR(void)
                 #endif
             } else {
                 push<SERIAL_BUFLEN>(serialInput, c);
-                #ifdef LOGGING
+                #if defined(LOGGING) && (LOGGING >= 2)
                 putc('>');
                 putc(c);
                 putc('\n');
