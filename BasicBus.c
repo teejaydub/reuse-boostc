@@ -29,7 +29,8 @@
 
 // Define this for concise logging about commands received and processed.
 // Define it to "2" to also see every character received.
-// #define LOGGING  1
+#define LOGGING  1
+// #undef LOGGING
 
 #define SERIAL_BUFLEN  48
 
@@ -195,6 +196,10 @@ byte peekc(void)
 		return peek(serialInput);
 }
 
+// Reads a decimal number of the given type, and returns it.
+// When it runs out of numeric digits, stops and returns what it's accumulated so far.
+// If the input digits exceed the size of T, it just overflows.
+// The following non-digit character is left in the input.
 template <class T>
 T readDecimal(void)
 {
@@ -257,13 +262,19 @@ byte SendBBFixedReading(byte code, fixed16 value)
 
 void ChangedBBParameter(byte index)
 {
-	if (index < firstParamToReport)
-		firstParamToReport = index;
-	if (index > lastParamToReport)
-        if (index >= bbParamCount)
-          lastParamToReport = bbParamCount - 1;
-        else
-		  lastParamToReport = index;
+    if (AnyBBParamsQueued()) {
+        // Some are already queued up, so expand the set we're sending to include this one.
+        if (index < firstParamToReport)
+            firstParamToReport = index;
+        if (index > lastParamToReport)
+            if (index >= bbParamCount)
+              lastParamToReport = bbParamCount - 1;
+            else
+              lastParamToReport = index;
+    } else {
+        // Nothing's queued, so send only this one.
+        firstParamToReport = lastParamToReport = index;
+    }
 }
 
 void EnqueueBBParameters(void)
@@ -366,6 +377,7 @@ void ProcessBBCommands(void) {
 					case 'S':  // radio status, S=<decimal byte>
 						if (getc() == '=') {
 							bbMasterStatus = readDecimal<byte>();
+
 							#ifdef LOGGING
                                 ensureNewline();
 								puts("S=");
@@ -398,12 +410,13 @@ void ProcessBBCommands(void) {
 								serInState = IN_GARBAGE;
 						} else if (peekc() == '?') {
 							// Output all parameters.
+							EnqueueBBParameters();
+
                             #ifdef LOGGING
                                 ensureNewline();
                                 putc('!');
                                 putNewline();
                             #endif
-							EnqueueBBParameters();
 						} else
 							// Not P=, so skip.
 							serInState = IN_GARBAGE;
@@ -412,10 +425,14 @@ void ProcessBBCommands(void) {
 					case ' ':
 						// Skip it and come around again.
 						break;
+
+                    case '\n':
+                        serInState = IN_LINE_START;
+                        break;
 						
 					default:
-						// Unrecognized command.
-						// Ignore it and move on.
+						// Unrecognized command, or \n at the end of a line.
+						// Move on.
 						serInState = IN_GARBAGE;
 						break;
 					}
