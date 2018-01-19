@@ -77,6 +77,9 @@ void ChangedBBParameter(byte index);
 // Or call this, if you don't know which parameter has changed, to schedule all of them for sending out.
 void EnqueueBBParameters(void);
 
+// Returns true if any parameters are (still) queued to be sent.
+byte AnyBBParamsQueued(void);
+
 // Call this to send a variable reading.
 // Returns true if there was enough room in the outgoing buffer, false if not (and does nothing).
 // If you don't have time to wait for this to return true, you may need to call ClearBBOutput() first.

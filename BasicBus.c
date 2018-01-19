@@ -29,9 +29,9 @@
 
 // Define this for concise logging about commands received and processed.
 // Define it to "2" to also see every character received.
-#define LOGGING  1
+// #define LOGGING  1
 
-#define SERIAL_BUFLEN  64
+#define SERIAL_BUFLEN  48
 
 byte serialOutputBuffer[SERIAL_BUFLEN];
 byte serialInputBuffer[SERIAL_BUFLEN];
@@ -260,13 +260,21 @@ void ChangedBBParameter(byte index)
 	if (index < firstParamToReport)
 		firstParamToReport = index;
 	if (index > lastParamToReport)
-		lastParamToReport = index;
+        if (index >= bbParamCount)
+          lastParamToReport = bbParamCount - 1;
+        else
+		  lastParamToReport = index;
 }
 
 void EnqueueBBParameters(void)
 {
 	firstParamToReport = 0;
-	lastParamToReport = bbParamCount;
+	lastParamToReport = bbParamCount - 1;
+}
+
+byte AnyBBParamsQueued(void)
+{
+    return firstParamToReport <= lastParamToReport;
 }
 
 void ClearBBOutput(void)
@@ -304,7 +312,6 @@ byte BasicBusISR(void)
                 putc(c);
                 putNewline();
                 #endif
-                ProcessBBCommands();
             }
         }
         return true;
@@ -319,11 +326,14 @@ void PollBasicBus(void)
 		txreg = pop(serialOutput);
 		
 	// If we're waiting to report some parameters, and there's room, send 'em out.
-	if (firstParamToReport <= lastParamToReport)
+	if (firstParamToReport <= lastParamToReport && firstParamToReport < bbParamCount)
 		if (SendBBParameter(firstParamToReport))
 			// They'll fail often due to insufficient room in the output buffer, 
 			// so just try again until there's enough room, then note that it's been sent.
 			++firstParamToReport;
+
+    // Process pending commands.
+    ProcessBBCommands();
 }
 
 void ProcessBBCommands(void) {
