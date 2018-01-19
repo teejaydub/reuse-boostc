@@ -29,15 +29,20 @@
 
 // Define this for concise logging about commands received and processed.
 // Define it to "2" to also see every character received.
-// #define LOGGING  1
+#define LOGGING  1
 
-#define SERIAL_BUFLEN  32
+#define SERIAL_BUFLEN  64
 
 byte serialOutputBuffer[SERIAL_BUFLEN];
 byte serialInputBuffer[SERIAL_BUFLEN];
 
 ByteBuf serialInput;
 ByteBuf serialOutput;
+
+// Commands must be preceded by \n~ to be parsed, and should be followed by \n to ensure quick processing.
+// But that makes a lot of extra lines while logging.
+// So, only send them when necessary.
+byte justSentNewline = false;
 
 // Pointer to the block of parametrs, with size.
 // This is maintained here, sending and receiving, and the client gets a callback when things change.
@@ -97,6 +102,19 @@ void InitializeBasicBus(byte paramCount, unsigned short* params)
 void putc(char c)
 {
 	push<SERIAL_BUFLEN>(serialOutput, c);
+    justSentNewline = (c == '\n');
+}
+
+// Standardize so we can easily change to "\r\n" if necessary.
+inline void putNewline(void)
+{
+    putc('\n');
+}
+
+inline void ensureNewline(void)
+{
+    if (!justSentNewline)
+        putNewline();
 }
 
 void puts(const char* s)
@@ -195,11 +213,12 @@ T readDecimal(void)
 byte SendBBParameter(byte index)
 {
 	if (serialOutput.lenUsed + ONE_PARAM_LEN < SERIAL_BUFLEN) {
+        ensureNewline();
 		puts("~P");
 		putDecimal(index);
 		putc('=');
 		putDecimal(bbParams[index]);
-		puts("\r\n");
+        putNewline();
 		
 		return true;
 	} else
@@ -209,11 +228,12 @@ byte SendBBParameter(byte index)
 byte SendBBReading(byte code, unsigned short value)
 {
 	if (serialOutput.lenUsed + ONE_PARAM_LEN < SERIAL_BUFLEN) {
+        ensureNewline();
 		putc('~');
 		putc(code);
 		putc('=');
 		putDecimal(value);
-		puts("\r\n");
+        putNewline();
 		
 		return true;
 	} else
@@ -223,11 +243,12 @@ byte SendBBReading(byte code, unsigned short value)
 byte SendBBFixedReading(byte code, fixed16 value)
 {
 	if (serialOutput.lenUsed + ONE_PARAM_LEN < SERIAL_BUFLEN) {
+        ensureNewline();
 		putc('~');
 		putc(code);
 		putc('=');
 		putFixed(value);
-		puts("\r\n");
+        putNewline();
 		
 		return true;
 	} else
@@ -248,6 +269,12 @@ void EnqueueBBParameters(void)
 	lastParamToReport = bbParamCount;
 }
 
+void ClearBBOutput(void)
+{
+    clear(serialOutput);
+    justSentNewline = false;
+}
+
 byte BasicBusISR(void)
 {
     if (pir1.RCIF) {
@@ -255,7 +282,8 @@ byte BasicBusISR(void)
         if (rcsta.FERR) {
             c = rcreg;
             #ifdef LOGGING
-            puts("#\n");
+            putc('#');
+            putNewline();
             #endif
         } else {
             c = rcreg;
@@ -267,14 +295,14 @@ byte BasicBusISR(void)
                 #ifdef LOGGING
                 putc('!');
                 putc(c);
-                putc('\n');
+                putNewline();
                 #endif
             } else {
                 push<SERIAL_BUFLEN>(serialInput, c);
                 #if defined(LOGGING) && (LOGGING >= 2)
                 putc('>');
                 putc(c);
-                putc('\n');
+                putNewline();
                 #endif
                 ProcessBBCommands();
             }
@@ -329,9 +357,10 @@ void ProcessBBCommands(void) {
 						if (getc() == '=') {
 							bbMasterStatus = readDecimal<byte>();
 							#ifdef LOGGING
+                                ensureNewline();
 								puts("S=");
 								putDecimal(bbMasterStatus);
-								putc('\n');
+                                putNewline();
 							#endif
 						} else
 							// Not S=, so skip to the next line.
@@ -347,11 +376,12 @@ void ProcessBBCommands(void) {
 								BBParameter(offset);
 
 								#ifdef LOGGING
+                                    ensureNewline();
 									putc('P');
 									putDecimal(offset);
 									putc('=');
 									putDecimal(data);
-									putc('\n');
+									putNewline();
 								#endif
 							} else
 								// Not P=x=, so skip.
@@ -359,7 +389,9 @@ void ProcessBBCommands(void) {
 						} else if (peekc() == '?') {
 							// Output all parameters.
                             #ifdef LOGGING
-                                puts("!\n");
+                                ensureNewline();
+                                putc('!');
+                                putNewline();
                             #endif
 							EnqueueBBParameters();
 						} else

@@ -73,10 +73,15 @@ void EnqueueBBParameters(void);
 
 // Call this to send a variable reading.
 // Returns true if there was enough room in the outgoing buffer, false if not (and does nothing).
+// If you don't have time to wait for this to return true, you may need to call ClearBBOutput() first.
 byte SendBBReading(byte code, unsigned short value);
 
 // Same for fixed-point variables.
 byte SendBBFixedReading(byte code, fixed16 value);
+
+// Clears the output buffer immediately,
+// e.g. to make room for an urgent next message.
+void ClearBBOutput(void);
 
 #endif
 // __BASICBUS_H
