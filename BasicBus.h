@@ -18,18 +18,24 @@
 	Simple serial protocol, based loosely on the original BasicBus design from 2004.
 	Geared toward multi-slave capability, but currently only supports one master and one slave.
 	
-	This implements the slave side, processing these commands:
-	~S=b
+	This implements the slave side, processing these commands from the master:
+	S=b
 		Reports the master status, byte b.
-	~Pn=s
-		Reports that parameter n (0-relative byte offset)'s new value is s (unsigned short).
-	~P?
+	P?
 		Requests a report of all parameters.
-		
-	~A=x
+
+    Sends these responses back to the master:
+    Pn=s
+        Reports that parameter n (0-relative byte offset)'s new value is s (unsigned short).
+    S=n
+        Reports a change in the slave's status, as a byte value.
+	A=x
 		Sends a reading for variable code A with value x.
 		A is any ASCII code (but traditionally capital or lowercase letters), except P.
 		x is a decimal value, unsigned byte or smaller.
+
+    Commands must be on a line (\n-delimited) that starts with '~'.
+    Commands may be grouped together on a line, separated by spaces.
 */
 
 #ifndef __BASICBUS_H

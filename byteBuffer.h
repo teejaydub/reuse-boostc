@@ -155,5 +155,16 @@ inline bool contains(ByteBuf& bb, char c)
 	return false;
 }
 
+inline bool containsWhitespace(ByteBuf& bb)
+{
+    byte* bufp = bb.buffer + bb.readIndex;
+    for (byte i = bb.readIndex; i < bb.lenUsed; i++)
+        if (*bufp == ' ' || *bufp == '\t' || *bufp == '\r' || *bufp == '\n')
+            return true;
+        else
+            ++bufp;
+    return false;
+}
+
 #endif
 // __BYTE_BUFFER_H
