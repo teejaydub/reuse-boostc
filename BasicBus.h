@@ -36,8 +36,9 @@ BB_EXTERN byte bbMasterStatus;
 
 // Call this right away after startup.
 // Uses the hardware serial port.
+// Sets the slave ID to respond to on the bus.
 // Sends and receives parameter values from the given buffer.
-void InitializeBasicBus(byte paramCount, unsigned short* params);
+void InitializeBasicBus(byte id, byte paramCount, unsigned short* params);
 
 // Call this in your low-priority interrupt routine.
 // It returns true if it handled an interrupt.

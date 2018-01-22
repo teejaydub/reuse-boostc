@@ -34,6 +34,9 @@
 
 #define SERIAL_BUFLEN  48
 
+byte slaveID;
+byte isSelectedSlave = false;
+
 byte serialOutputBuffer[SERIAL_BUFLEN];
 byte serialInputBuffer[SERIAL_BUFLEN];
 
@@ -62,7 +65,8 @@ byte lastParamToReport = 0;  // the 0-relative index of the last param that need
 typedef enum {
 	IN_GARBAGE,  // startup or in a line that we should ignore
 	IN_LINE_START,  // just saw a newline
-	IN_COMMAND,  // just saw a command initializer
+    IN_COMMAND,  // just saw a command initializer
+	IN_COMMAND_TAIL,  // just processed some prefix of a command; skip the rest.
 } SerInState;
 SerInState serInState;
 
@@ -73,18 +77,36 @@ byte ProcessBBCommands(void);
  #define RX_TRIS  trisc
  #define RX_ANSEL  anselc
  #define RX_PIN  7
+
+ #define TX_TRIS  trisc
+ #define TX_PIN  6
 #else
  #error Need to define the RX port pin for this chip.
 #endif
 
 
-void InitializeBasicBus(byte paramCount, unsigned short* params)
+// If isSelected, take control of the MISO line.
+// Otherwise, tri-state it.
+void beSelectedSlave(byte isSelected)
+{
+    if (isSelected) {
+        txsta.TXEN = 1;
+        TX_TRIS.TX_PIN = 0;
+    } else {
+        txsta.TXEN = 0;
+        TX_TRIS.TX_PIN = 1;
+        clear(serialOutput);
+    }
+
+    isSelectedSlave = isSelected;
+}
+
+void InitializeBasicBus(byte id, byte paramCount, unsigned short* params)
 {
 	// Set for 9600 baud.
 	txsta.BRGH = 1;  // Set baud rate to...
 	spbrg = 25;  // ... 9600 baud
 	rcsta.SPEN = 1;  // Enable serial port.
-	txsta.TXEN = 1;  // Enable transmission.  (When BB selection is implemented, don't start until we've been selected.)
 	rcsta.CREN = 1;  // Enable serial reception.
 
 	pie1.RCIE = 1;  // Interrupts on reception.
@@ -98,7 +120,10 @@ void InitializeBasicBus(byte paramCount, unsigned short* params)
 	
 	init(serialInput, serialInputBuffer);
 	init(serialOutput, serialOutputBuffer);
+
+    beSelectedSlave(false);
 	
+    slaveID = id;
 	bbParamCount = paramCount;
 	bbParams = params;
 }
@@ -107,8 +132,10 @@ void InitializeBasicBus(byte paramCount, unsigned short* params)
 // Drops it if the queue is full.
 void putc(char c)
 {
-	push<SERIAL_BUFLEN>(serialOutput, c);
-    justSentNewline = (c == '\n');
+    if (isSelectedSlave) {
+        push<SERIAL_BUFLEN>(serialOutput, c);
+        justSentNewline = (c == '\n');
+    }
 }
 
 // Standardize so we can easily change to "\r\n" if necessary.
@@ -381,7 +408,7 @@ byte ProcessBBCommands(void) {
 				break;
 			}
 			break;
-		
+
 		case IN_COMMAND:
 			if (length(serialInput) >= 3 && contains(serialInput, '\n')) {  // wait till we have the whole line.
 				if (length(serialInput) >= 3) {
@@ -397,9 +424,8 @@ byte ProcessBBCommands(void) {
 								putDecimal(bbMasterStatus);
                                 putNewline();
 							#endif
-						} else
-							// Not S=, so skip to the next line.
-							serInState = IN_GARBAGE;
+						}
+						serInState = IN_COMMAND_TAIL;
 						break;
 						
 					case 'P':  // Short parameter, P<n>=<unsigned decimal short>
@@ -432,10 +458,26 @@ byte ProcessBBCommands(void) {
                                 puts("P?");
                                 putNewline();
                             #endif
-						} else
-							// Not P=, so skip.
-							serInState = IN_GARBAGE;
-						break;				
+						}
+						serInState = IN_COMMAND_TAIL;
+						break;
+
+                    case '?':  // select slave, ?=<decimal byte> or ?=*
+                        if (peekc() == '=') {
+                            getc();
+                            if (peekc() == '*') {
+                                beSelectedSlave(true);
+                                result = true;
+                            } else if (isdigit(peekc())) {
+                                byte targetID = readDecimal<byte>();
+                                if (slaveID == targetID) {
+                                    beSelectedSlave(true);
+                                    result = true;
+                                }
+                            }
+                        }
+                        serInState = IN_COMMAND_TAIL;
+                        break;
 						
 					case ' ':
 						// Skip it and come around again.
@@ -467,6 +509,14 @@ byte ProcessBBCommands(void) {
 			}
 			break;
 			
+        case IN_COMMAND_TAIL:
+            // Skip any unrecognized junk in a command we don't recognize,
+            // or at the end of a command we have processed.
+            while (!isspace(peekc()))
+                getc();
+            serInState = IN_COMMAND;
+            break;
+        
 		default:
 			// Unknown state somehow, so recover.
 			serInState = IN_GARBAGE;
