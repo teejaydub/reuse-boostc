@@ -62,7 +62,7 @@ typedef enum {
 SerInState serInState;
 
 // Forward declarations
-void ProcessBBCommands(void);
+byte ProcessBBCommands(void);
 
 #ifdef _PIC18F45K22
  #define RX_TRIS  trisc
@@ -330,7 +330,7 @@ byte BasicBusISR(void)
         return false;
 }
 
-void PollBasicBus(void)
+byte PollBasicBus(void)
 {
 	// Push characters to transmit.
 	if (pir1.TXIF && !isEmpty(serialOutput))
@@ -344,10 +344,12 @@ void PollBasicBus(void)
 			++firstParamToReport;
 
     // Process pending commands.
-    ProcessBBCommands();
+    return ProcessBBCommands();
 }
 
-void ProcessBBCommands(void) {
+byte ProcessBBCommands(void) {
+    byte result = false;
+
 	while (!isEmpty(serialInput)) {
 		switch(serInState) {
 		case IN_GARBAGE:
@@ -377,6 +379,7 @@ void ProcessBBCommands(void) {
 					case 'S':  // radio status, S=<decimal byte>
 						if (getc() == '=') {
 							bbMasterStatus = readDecimal<byte>();
+                            result = true;
 
 							#ifdef LOGGING
                                 ensureNewline();
@@ -396,6 +399,7 @@ void ProcessBBCommands(void) {
 								unsigned short data = readDecimal<unsigned short>();
 								bbParams[offset] = data;
 								BBParameter(offset);
+                                result = true;
 
 								#ifdef LOGGING
                                     ensureNewline();
@@ -411,6 +415,7 @@ void ProcessBBCommands(void) {
 						} else if (peekc() == '?') {
 							// Output all parameters.
 							EnqueueBBParameters();
+                            result = true;
 
                             #ifdef LOGGING
                                 ensureNewline();
@@ -447,7 +452,7 @@ void ProcessBBCommands(void) {
 				if (isFull<SERIAL_BUFLEN>(serialInput))
 					serInState = IN_GARBAGE;
 				// It's not full, so just wait for more.
-				return;
+				return result;
 			}
 			break;
 			
@@ -457,4 +462,6 @@ void ProcessBBCommands(void) {
 			break;
 		}
 	}
+
+    return result;
 }

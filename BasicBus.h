@@ -50,7 +50,8 @@
 #include "fixed16.h"
 #include "types-tjw.h"
 
-// Holds the current status returned by the master.
+// Holds the last status returned by the master.
+// The caller can set this to an initial value if desired.
 BB_EXTERN byte bbMasterStatus;
 
 // Call this right away after startup.
@@ -64,7 +65,8 @@ byte BasicBusISR(void);
 
 // Call this frequently to keep the queue flowing.
 // It will call the handler functions below.
-void PollBasicBus(void);
+// Returns true if any commands were received from the master.
+byte PollBasicBus(void);
 
 // Implement this in the calling code.
 // It's called when a new value is received for the specified parameter.
