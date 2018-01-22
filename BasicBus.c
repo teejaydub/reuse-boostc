@@ -446,9 +446,10 @@ byte ProcessBBCommands(void) {
                         break;
 						
 					default:
-						// Unrecognized command, or \n at the end of a line.
-						// Move on.
-						serInState = IN_GARBAGE;
+						// Unrecognized command.
+						// Skip to the next space or newline.
+                        while (!isspace(peekc()))
+                            getc();
 						break;
 					}
 				} else {

@@ -1,0 +1,187 @@
+BasicBus Specification
+======================
+
+(c) Six Mile Creek Systems 2004-2018.  Designed by Timothy Weber.
+
+A simple serial protocol, based loosely on the original BasicBus design from 2004.
+Supports multiple low-data-rate slaves controlled by a master.
+Power can be supplied from the bus as well.
+
+Core purpose is to distribute sensors and actuators near the main processor,
+e.g. in the same room, providing a little power, over cheap, light, commonly-available cable.
+
+## Concepts
+
+There is one Master, and one or more Slaves.
+
+At most one Slave is selected at a time.  Other Slaves stay connected to the bus,
+but do not respond until they are selected.
+
+Data types used:
+
+* **Byte**: An unsigned value, 0-255.
+* **Word**: An unsigned value, 0-65535.
+* **Short**: A signed value, -32768 - 32767.
+* **Float**: A floating-point value, represented in decimal ASCII.
+
+The Master has a Status, consisting of one unsigned byte (0-255).
+Its meaning is application-defined.
+
+The Slaves have:
+
+* A Status, one byte, application-defined
+* A set of Parameters, each with a short value, used for mostly static configuration
+* A set of Variables, each with a short value, used for primary readings and actuation.
+
+## Limits
+
+The limit of the number of Slaves depends on the source impedance or 
+fan-out of the Master's serial driver (MOSI).  6 is definitely feasible.
+
+## Physical
+
+Connection is via flat, 4-conductor, 28 AWG cable, commonly called "telephone line cord".
+A maximum resistance of 1.1 Ohm/meter is recommended.
+
+Connectors are RJ11, 6-position, 4-conductor (6P4C), though 6P6C (aka RJ14) are also compatible. 
+These are American "plain old telephone service" (POTS) connectors.
+
+### Straight-wired cables
+
+Cables MUST be wired "straight" - meaning the RJ11 plugs have opposite orientations on either end.
+
+One way to specify and check this is: When assembling cables, ensure that the plug tab faces
+the cable seam at one end, and the plug on the other end faces away from the cable seam.
+
+This results in cables looking like this, viewed end-on:
+    
+     _==_              ____
+    |    |============|    |
+     ----              -__-
+     4321              1234
+
+This pin numbering seems to be consistently followed for jacks I've seen.  
+The colors indicated are one convention, though the reverse can also be used.
+
+Another test for straight wiring: If you line up the two plugs at opposite ends of the cable
+so that the conductors are visible and parallel, like this:
+
+     _______    _______
+    |1|2|3|4|  |1|2|3|4|
+    |1|2|3|4|  |1|2|3|4|  <-- 4 copper conductors
+    |-------|  |-------|
+    | ##### |  | ##### |
+    |_______|  |_______|
+      |   |      |   |
+
+you should get continuity between the numbered pairs as shown (and no others).
+
+## Electrical
+
+Wiring to the jacks are as follows - with mnemonic color coding that matches some common jacks:
+
+    Pin | Color  | Meaning   
+    ----| ------ | ----------
+    1   | white  | available 
+    2   | black  | GND
+    3   | red    | V+
+    4   | green  | MOSI
+    5   | yellow | MISO
+    6   | blue   | available
+
+Notes:
+
+* **Available** pins can be used e.g. for triggering firmware updates to an individual device in a programming fixture.
+* **GND** is the common ground.
+* **V+** is nominally 5 V at the Master, but will go down near 3.3 V at 100' of cable.  
+    It can source 500 mA combined across all slaves (of course Masters could alter that).
+* **MOSI** is Master Out, Slave In.
+* **MISO** is Master In, Slave Out.
+
+### Transmission
+
+Transport is via full-duplex asynchronous serial at 9600 baud, 8 data bits, 1 stop bit.
+
+The Master only transmits on MOSI, and receives on MISO.
+
+The Slaves all receive on MOSI, and transmit when selected on MISO.  When a slave is not selected,
+it must leave MISO floating.
+
+### Termination
+
+The Master is responsible for pulling MISO up to V+ using a
+20K resistor to prevent noise while Slaves pass off control of the
+MISO line. If it does not provide this pullup, it must take
+responsibility to wait 100 ms after selecting a Slave before it
+listens to the MISO line.  (This may result in missing the response, so it may
+require selecting the Slave again.)
+
+TBD: 
+* pullups on Slaves?
+* capacitance
+
+## Protocol
+
+Commands and responses must be on a line (newline-delimited) that starts with '~'.
+
+Commands and responses may be grouped together on a line, separated by spaces.
+
+Examples, with newline represented as `\n`:
+
+    ~S=5\n
+    ~?=* #=1 *=1\n
+    ~P?
+    ~P0=37
+    ~T=43.22
+
+### Master commands
+
+The following commands are sent from the master:
+
+* S=b  
+    Reports the master status, b.
+* ?=b  
+    Selects the slave with index b.  All other slaves should disconnect from the MISO line.
+    The slave responds with its Status, within 100 ms.
+* ?=*  
+    Selects whatever slave is currently connected (should be only one).  
+    The slave responds with its Status, within 100 ms.
+
+The following commands are to be executed only by the currently-selected slave:
+
+* #=b  
+    Sets the slave's index to b, permanently.  
+    The slave responds with "#=b".  
+    Commonly used to set the index of a single slave, the only one attached to the bus,
+    during setup, like "~?=* #=1".
+* *=1  
+    "Async on"   
+    Tells the slave to respond with all parameters, status, and variables as they change or periodically.  
+    The slave responds "*=1".  
+    The corresponding responses below are sent subsequently, until "-?" or another slave is selected.
+* *=0  
+    "Async off"  
+    Tells the slave to stop reporting data asynchronously.  
+    The slave responds "*=0".
+
+Not yet implemented:
+
+* S?  
+    Requests the slave's status, as an S=n response.
+* P?  
+    Requests a report of all parameters.
+* A?  
+    Requests a reading for variable code A.  
+    A is any ASCII code (but traditionally capital or lowercase letters), except P.
+
+### Slave responses
+
+The slave sends these responses back to the master, when requested as above:
+
+* Pn=w  
+    Reports that parameter n (0-relative byte)'s new value is s (word).
+* S=n  
+    Reports a change in the slave's status, as a byte value.
+* A=x  
+    Sends a reading for variable code A with value x.  
+    x is a decimal short or floating-point value.

@@ -29,7 +29,8 @@
 #ifndef __BYTE_BUFFER_H
 #define __BYTE_BUFFER_H
 
-#include <types-tjw.h>
+#include <ctype.h>
+#include "types-tjw.h"
 
 struct ByteBuf_s {
 	byte* buffer;
@@ -159,7 +160,7 @@ inline bool containsWhitespace(ByteBuf& bb)
 {
     byte* bufp = bb.buffer + bb.readIndex;
     for (byte i = bb.readIndex; i < bb.lenUsed; i++)
-        if (*bufp == ' ' || *bufp == '\t' || *bufp == '\r' || *bufp == '\n')
+        if (isspace(*bufp))
             return true;
         else
             ++bufp;
