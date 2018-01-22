@@ -40,6 +40,11 @@ byte serialInputBuffer[SERIAL_BUFLEN];
 ByteBuf serialInput;
 ByteBuf serialOutput;
 
+#ifdef LOGGING
+// Holds a character to represent the last error on the serial input port
+byte lastSerialError = '\0';
+#endif
+
 // Commands must be preceded by \n~ to be parsed, and should be followed by \n to ensure quick processing.
 // But that makes a lot of extra lines while logging.
 // So, only send them when necessary.
@@ -301,8 +306,7 @@ byte BasicBusISR(void)
         if (rcsta.FERR) {
             c = rcreg;
             #ifdef LOGGING
-            putc('#');
-            putNewline();
+            lastSerialError = '#';
             #endif
         } else {
             c = rcreg;
@@ -312,9 +316,7 @@ byte BasicBusISR(void)
                 clear(serialInput);
                 rcsta.CREN = 1;
                 #ifdef LOGGING
-                putc('!');
-                putc(c);
-                putNewline();
+                lastSerialError = '!';
                 #endif
             } else {
                 push<SERIAL_BUFLEN>(serialInput, c);
@@ -332,6 +334,14 @@ byte BasicBusISR(void)
 
 byte PollBasicBus(void)
 {
+    #ifdef LOGGING
+    if (lastSerialError) {
+        putc(lastSerialError);
+        lastSerialError = '\0';
+        putc('\n');
+    }
+    #endif
+
 	// Push characters to transmit.
 	if (pir1.TXIF && !isEmpty(serialOutput))
 		txreg = pop(serialOutput);
@@ -419,7 +429,7 @@ byte ProcessBBCommands(void) {
 
                             #ifdef LOGGING
                                 ensureNewline();
-                                putc('!');
+                                puts("P?");
                                 putNewline();
                             #endif
 						} else
