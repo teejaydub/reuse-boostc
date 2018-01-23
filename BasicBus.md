@@ -171,6 +171,7 @@ The following commands are to be executed only by the currently-selected slave:
     A is any ASCII code (but traditionally capital or lowercase letters), except P.
 * ?*
     Requests a reading of all variables and all changed parameters.
+    When all have been sent, the slave will send the "." command.
 * A=x  
     Tells the slave to set variable code A (typically an actuator) with value x.  
     x is a decimal short or floating-point value.
@@ -187,3 +188,8 @@ The slave sends these responses back to the master, when requested as above:
 * A=x  
     Sends a reading for variable code A with value x.  
     x is a decimal short or floating-point value.
+* .
+    Indicates that all pending responses to past commands have now been sent.
+    Follows ?* and ?P.
+    If the Master only sends one ?P or ?* command at a time and waits for this,
+    it will definitively indicate that everything's been sent.

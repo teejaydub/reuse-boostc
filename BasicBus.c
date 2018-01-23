@@ -70,6 +70,8 @@ byte lastParamToReport = 0;  // the 0-relative index of the last param that need
 byte queuedVariablesBuffer[MAX_VARIABLES] = "";
 ByteBuf queuedVariables;
 
+byte wildcardUnderway = false;
+
 typedef enum {
 	IN_GARBAGE,  // startup or in a line that we should ignore
 	IN_LINE_START,  // just saw a newline
@@ -329,6 +331,7 @@ byte SendBBParameter(byte index)
 		return false;
 }
 
+// Sends the given variable value, or queues it for later.
 void SendBBReading(byte code, unsigned short value)
 {
     if (CanWriteParam()) {
@@ -382,7 +385,7 @@ void EnqueueBBParameters(void)
 
 byte AnyBBParamsQueued(void)
 {
-    return firstParamToReport <= lastParamToReport;
+    return firstParamToReport <= lastParamToReport && firstParamToReport < bbParamCount;
 }
 
 void ClearBBOutput(void)
@@ -413,14 +416,20 @@ byte PollBasicBus(void)
 		txreg = pop(serialOutput);
 		
 	// If we're waiting to report some parameters, and there's room, send 'em out.
-	if (firstParamToReport <= lastParamToReport && firstParamToReport < bbParamCount) {
+	if (AnyBBParamsQueued()) {
 		if (SendBBParameter(firstParamToReport))
 			// They'll fail often due to insufficient room in the output buffer, 
 			// so just try again until there's enough room, then note that it's been sent.
 			++firstParamToReport;
-    } else if (!isEmpty(queuedVariables) && CanWriteParam()) {
+    } else if (!isEmpty(queuedVariables)) {
+        if (CanWriteParam())
         // If we're waiting to send some variables, and there's room, send the next one.
-        OnBBRequest(pop(queuedVariables));
+            OnBBRequest(pop(queuedVariables));
+    } else if (wildcardUnderway) {
+        // We were responding to a wildcard request, but everything's now been sent.
+        ensureNewline();
+        puts("~.\n");  // "all done"
+        wildcardUnderway = false;
     }
 
     return result;
@@ -518,6 +527,7 @@ byte ProcessBBCommands(void) {
                             #endif
 
                             EnqueueBBParameters();
+                            wildcardUnderway = true;
                             result = true;
                             break;
 
@@ -529,6 +539,8 @@ byte ProcessBBCommands(void) {
                                 putNewline();
                             #endif
 
+                            if (peekc() == '*')
+                                wildcardUnderway = true;
                             OnBBRequest(peekc());
                             result = true;
                             break;
