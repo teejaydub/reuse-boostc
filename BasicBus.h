@@ -49,6 +49,7 @@ byte BasicBusISR(void);
 // Returns true if any commands were received from the master.
 byte PollBasicBus(void);
 
+
 // Implement this in the calling code.
 // It's called when a new value is received for the specified parameter.
 // The new value is already in the params buffer sent to InitializeBasicBus().
@@ -63,13 +64,18 @@ void EnqueueBBParameters(void);
 // Returns true if any parameters are (still) queued to be sent.
 byte AnyBBParamsQueued(void);
 
-// Call this to send a variable reading.
-// Returns true if there was enough room in the outgoing buffer, false if not (and does nothing).
-// If you don't have time to wait for this to return true, you may need to call ClearBBOutput() first.
-byte SendBBReading(byte code, unsigned short value);
+
+// This is called to request a specific variable to be sent.
+// Handle it by sending that variables value with SendBB* below.
+// If the code is '*', send all variables.
+// If the code is 'S', send the slave's status.
+void OnBBRequest(byte code);
+
+// Call this to send a variable reading, when requested.
+void SendBBReading(byte code, unsigned short value);
 
 // Same for fixed-point variables.
-byte SendBBFixedReading(byte code, fixed16 value);
+void SendBBFixedReading(byte code, fixed16 value);
 
 // Clears the output buffer immediately,
 // e.g. to make room for an urgent next message.

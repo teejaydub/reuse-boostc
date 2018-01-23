@@ -4,7 +4,7 @@ BasicBus Specification
 (c) Six Mile Creek Systems 2004-2018.  Designed by Timothy Weber.
 
 A simple serial protocol, based loosely on the original BasicBus design from 2004.
-Supports multiple low-data-rate slaves controlled by a master.
+Comfortably supports a handful of low-data-rate slaves controlled by a master.
 Power can be supplied from the bus as well.
 
 Core purpose is to distribute sensors and actuators near the main processor,
@@ -36,7 +36,13 @@ The Slaves have:
 ## Limits
 
 The limit of the number of Slaves depends on the source impedance or 
-fan-out of the Master's serial driver (MOSI).  6 is definitely feasible.
+fan-out of the Master's serial driver (MOSI).  5 is definitely feasible; 10 is probably
+at the limit.
+
+Response time for that many slaves is probably around 1 second latency, if you're polling
+each slave for 50-100 ms.
+
+Variables are two bytes, so only individual data points are supported, not streaming data.
 
 ## Physical
 
@@ -154,25 +160,21 @@ The following commands are to be executed only by the currently-selected slave:
     The slave responds with "#=b".  
     Commonly used to set the index of a single slave, the only one attached to the bus,
     during setup, like "~?=* #=1".
-* *=1  
-    "Async on"   
-    Tells the slave to respond with all parameters, status, and variables as they change or periodically.  
-    The slave responds "*=1".  
-    The corresponding responses below are sent subsequently, until "-?" or another slave is selected.
-* *=0  
-    "Async off"  
-    Tells the slave to stop reporting data asynchronously.  
-    The slave responds "*=0".
-
-Not yet implemented:
-
-* S?  
+* Pn=w  
+    Tells the slave to set parameter n (0-relative byte)'s to the new value w (word).
+* ?S  
     Requests the slave's status, as an S=n response.
-* P?  
+* ?P  
     Requests a report of all parameters.
-* A?  
+* ?A  
     Requests a reading for variable code A.  
     A is any ASCII code (but traditionally capital or lowercase letters), except P.
+* ?*
+    Requests a reading of all variables and all changed parameters.
+* A=x  
+    Tells the slave to set variable code A (typically an actuator) with value x.  
+    x is a decimal short or floating-point value.
+    Only implemented by the slave for actuators, not sensors.
 
 ### Slave responses
 

@@ -34,6 +34,8 @@
 
 #define SERIAL_BUFLEN  48
 
+#define MAX_VARIABLES  10
+
 byte slaveID;
 byte isSelectedSlave = false;
 
@@ -62,6 +64,12 @@ unsigned short* bbParams = 0;
 byte firstParamToReport = 1;  // the 0-relative index of the first param that needs reporting
 byte lastParamToReport = 0;  // the 0-relative index of the last param that needs reporting
 
+// When this null-terminated string is nonempty, re-request the specified variables to be sent.
+// That is - it's just the symbols for each variable that we tried to send but couldn't,
+// held until they've been sent.
+byte queuedVariablesBuffer[MAX_VARIABLES] = "";
+ByteBuf queuedVariables;
+
 typedef enum {
 	IN_GARBAGE,  // startup or in a line that we should ignore
 	IN_LINE_START,  // just saw a newline
@@ -72,6 +80,7 @@ SerInState serInState;
 
 // Forward declarations
 byte ProcessBBCommands(void);
+void putc(char c);
 
 #ifdef _PIC18F45K22
  #define RX_TRIS  trisc
@@ -84,6 +93,9 @@ byte ProcessBBCommands(void);
  #error Need to define the RX port pin for this chip.
 #endif
 
+
+//============================================================================
+// Serial port usage and initialization
 
 // If isSelected, take control of the MISO line.
 // Otherwise, tri-state it.
@@ -120,6 +132,7 @@ void InitializeBasicBus(byte id, byte paramCount, unsigned short* params)
 	
 	init(serialInput, serialInputBuffer);
 	init(serialOutput, serialOutputBuffer);
+    init(queuedVariables, queuedVariablesBuffer);
 
     beSelectedSlave(false);
 	
@@ -127,6 +140,43 @@ void InitializeBasicBus(byte id, byte paramCount, unsigned short* params)
 	bbParamCount = paramCount;
 	bbParams = params;
 }
+
+byte BasicBusISR(void)
+{
+    if (pir1.RCIF) {
+        byte c;
+        if (rcsta.FERR) {
+            c = rcreg;
+            #ifdef LOGGING
+            lastSerialError = '#';
+            #endif
+        } else {
+            c = rcreg;
+            if (rcsta.OERR) {
+                // Overrun error, meaning we missed some characters - restart reception.
+                rcsta.CREN = 0;
+                clear(serialInput);
+                rcsta.CREN = 1;
+                #ifdef LOGGING
+                lastSerialError = '!';
+                #endif
+            } else {
+                push<SERIAL_BUFLEN>(serialInput, c);
+                #if defined(LOGGING) && (LOGGING >= 2)
+                putc('>');
+                putc(c);
+                putNewline();
+                #endif
+            }
+        }
+        return true;
+    } else
+        return false;
+}
+
+
+//============================================================================
+// Serial I/O
 
 // Enqueues this character for sending.
 // Drops it if the queue is full.
@@ -243,13 +293,30 @@ T readDecimal(void)
 	return result;
 }
 
+
+//============================================================================
+// Parameter and variable I/O
+
 #define ONE_PARAM_LEN  12  // like "~P255=32767\n"
 
+// Notes that we should re-send this variable later.
+void EnqueueVariable(byte code)
+{
+    if (!contains(queuedVariables, code))
+        push<MAX_VARIABLES>(queuedVariables, code);
+}
+
+// Returns true if there's room in the output buffer for one more parameter or variable.
+inline bool CanWriteParam(void)
+{
+    return serialOutput.lenUsed + ONE_PARAM_LEN < SERIAL_BUFLEN;
+}
+
 // Sends the given parameter, and returns true if there was room.
-// If there isn't room, do nothing and return flase.
+// If there isn't room, do nothing and return false.
 byte SendBBParameter(byte index)
 {
-	if (serialOutput.lenUsed + ONE_PARAM_LEN < SERIAL_BUFLEN) {
+	if (CanWriteParam()) {
         ensureNewline();
 		puts("~P");
 		putDecimal(index);
@@ -262,34 +329,32 @@ byte SendBBParameter(byte index)
 		return false;
 }
 
-byte SendBBReading(byte code, unsigned short value)
+void SendBBReading(byte code, unsigned short value)
 {
-	if (serialOutput.lenUsed + ONE_PARAM_LEN < SERIAL_BUFLEN) {
+    if (CanWriteParam()) {
         ensureNewline();
 		putc('~');
 		putc(code);
 		putc('=');
 		putDecimal(value);
         putNewline();
-		
-		return true;
 	} else
-		return false;
+        // If there's no room in the output buffer, queue this variable for sending later.
+        EnqueueVariable(code);
 }
 
-byte SendBBFixedReading(byte code, fixed16 value)
+void SendBBFixedReading(byte code, fixed16 value)
 {
-	if (serialOutput.lenUsed + ONE_PARAM_LEN < SERIAL_BUFLEN) {
+    if (CanWriteParam()) {
         ensureNewline();
 		putc('~');
 		putc(code);
 		putc('=');
 		putFixed(value);
         putNewline();
-		
-		return true;
-	} else
-		return false;
+    } else
+        // If there's no room in the output buffer, queue this variable for sending later.
+        EnqueueVariable(code);
 }
 
 void ChangedBBParameter(byte index)
@@ -326,38 +391,9 @@ void ClearBBOutput(void)
     justSentNewline = false;
 }
 
-byte BasicBusISR(void)
-{
-    if (pir1.RCIF) {
-        byte c;
-        if (rcsta.FERR) {
-            c = rcreg;
-            #ifdef LOGGING
-            lastSerialError = '#';
-            #endif
-        } else {
-            c = rcreg;
-            if (rcsta.OERR) {
-                // Overrun error, meaning we missed some characters - restart reception.
-                rcsta.CREN = 0;
-                clear(serialInput);
-                rcsta.CREN = 1;
-                #ifdef LOGGING
-                lastSerialError = '!';
-                #endif
-            } else {
-                push<SERIAL_BUFLEN>(serialInput, c);
-                #if defined(LOGGING) && (LOGGING >= 2)
-                putc('>');
-                putc(c);
-                putNewline();
-                #endif
-            }
-        }
-        return true;
-    } else
-        return false;
-}
+
+//============================================================================
+// High-level processing
 
 byte PollBasicBus(void)
 {
@@ -369,19 +405,25 @@ byte PollBasicBus(void)
     }
     #endif
 
+    // Process pending input commands from the master.
+    byte result = ProcessBBCommands();
+
 	// Push characters to transmit.
 	if (pir1.TXIF && !isEmpty(serialOutput))
 		txreg = pop(serialOutput);
 		
 	// If we're waiting to report some parameters, and there's room, send 'em out.
-	if (firstParamToReport <= lastParamToReport && firstParamToReport < bbParamCount)
+	if (firstParamToReport <= lastParamToReport && firstParamToReport < bbParamCount) {
 		if (SendBBParameter(firstParamToReport))
 			// They'll fail often due to insufficient room in the output buffer, 
 			// so just try again until there's enough room, then note that it's been sent.
 			++firstParamToReport;
+    } else if (!isEmpty(queuedVariables) && CanWriteParam()) {
+        // If we're waiting to send some variables, and there's room, send the next one.
+        OnBBRequest(pop(queuedVariables));
+    }
 
-    // Process pending commands.
-    return ProcessBBCommands();
+    return result;
 }
 
 byte ProcessBBCommands(void) {
@@ -413,7 +455,8 @@ byte ProcessBBCommands(void) {
 			if (length(serialInput) >= 3 && contains(serialInput, '\n')) {  // wait till we have the whole line.
 				if (length(serialInput) >= 3) {
 					switch(getc()) {
-					case 'S':  // radio status, S=<decimal byte>
+
+					case 'S':  // Master status, S=<decimal byte>
 						if (getc() == '=') {
 							bbMasterStatus = readDecimal<byte>();
                             result = true;
@@ -445,25 +488,15 @@ byte ProcessBBCommands(void) {
 									putDecimal(data);
 									putNewline();
 								#endif
-							} else
-								// Not P=x=, so skip.
-								serInState = IN_GARBAGE;
-						} else if (peekc() == '?') {
-							// Output all parameters.
-							EnqueueBBParameters();
-                            result = true;
-
-                            #ifdef LOGGING
-                                ensureNewline();
-                                puts("P?");
-                                putNewline();
-                            #endif
+							}
 						}
 						serInState = IN_COMMAND_TAIL;
 						break;
 
-                    case '?':  // select slave, ?=<decimal byte> or ?=*
-                        if (peekc() == '=') {
+                    case '?':  // requests
+                        switch (peekc()) {
+
+                        case '=':  // Select slave, ?=<decimal byte> or ?=*
                             getc();
                             if (peekc() == '*') {
                                 beSelectedSlave(true);
@@ -475,6 +508,30 @@ byte ProcessBBCommands(void) {
                                     result = true;
                                 }
                             }
+                            break;
+
+                        case 'P':  // Request parameters
+                            #ifdef LOGGING
+                                ensureNewline();
+                                puts("?P");
+                                putNewline();
+                            #endif
+
+                            EnqueueBBParameters();
+                            result = true;
+                            break;
+
+                        default:  // Request status or variable
+                            #ifdef LOGGING
+                                ensureNewline();
+                                putc('?');
+                                putc(peekc());
+                                putNewline();
+                            #endif
+
+                            OnBBRequest(peekc());
+                            result = true;
+                            break;
                         }
                         serInState = IN_COMMAND_TAIL;
                         break;
