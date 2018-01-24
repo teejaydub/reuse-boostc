@@ -59,12 +59,12 @@ Cables MUST be wired "straight" - meaning the RJ11 plugs have opposite orientati
 One way to specify and check this is: When assembling cables, ensure that the plug tab faces
 the cable seam at one end, and the plug on the other end faces away from the cable seam.
 
-This results in cables looking like this, viewed end-on:
+This results in cables looking like this, viewing the plugs end-on:
     
      _==_              ____
     |    |============|    |
      ----              -__-
-     4321              1234
+     1234              4321
 
 This pin numbering seems to be consistently followed for jacks I've seen.  
 The colors indicated are one convention, though the reverse can also be used.
