@@ -55,6 +55,7 @@ These are American "plain old telephone service" (POTS) connectors.
 ### Straight-wired cables
 
 Cables MUST be wired "straight" - meaning the RJ11 plugs have opposite orientations on either end.
+Available cables seem to be inconsistent about this, because the POTS usage didn't care.
 
 One way to specify and check this is: When assembling cables, ensure that the plug tab faces
 the cable seam at one end, and the plug on the other end faces away from the cable seam.
@@ -88,16 +89,13 @@ Wiring to the jacks are as follows - with mnemonic color coding that matches som
 
     Pin | Color  | Meaning   
     ----| ------ | ----------
-    1   | white  | available 
-    2   | black  | GND
-    3   | red    | V+
-    4   | green  | MOSI
-    5   | yellow | MISO
-    6   | blue   | available
+    1   | black  | GND
+    2   | red    | V+
+    3   | green  | MOSI
+    4   | yellow | MISO
 
 Notes:
 
-* **Available** pins can be used e.g. for triggering firmware updates to an individual device in a programming fixture.
 * **GND** is the common ground.
 * **V+** is nominally 5 V at the Master, but will go down near 3.3 V at 100' of cable.  
     It can source 500 mA combined across all slaves (of course Masters could alter that).
