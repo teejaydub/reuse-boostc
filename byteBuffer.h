@@ -5,8 +5,10 @@
 	So, it's like a circular buffer, except without the overhead,
 	for situations where you can be sure of the maximum length of messages
 	but not the precise length of an individual message.
+    You also must be sure that a previous message will be completely read (so the buffer is cleared)
+    before the next message is received.
 	
-    Copyright (c) 2017 by Timothy J. Weber, tw@timothyweber.org.
+    Copyright (c) 2017, 2018 by Timothy J. Weber, tw@timothyweber.org.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

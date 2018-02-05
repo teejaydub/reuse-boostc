@@ -74,8 +74,9 @@ byte wildcardUnderway = false;
 
 typedef enum {
 	IN_GARBAGE,  // startup or in a line that we should ignore
-	IN_LINE_START,  // just saw a newline
-    IN_COMMAND,  // just saw a command initializer
+	AT_LINE_START,  // just saw a newline
+    BETWEEN_COMMANDS,  // waiting for a command or whitespace
+    AT_COMMAND,  // the first thing in the buffer is a non-space potential command
 	IN_COMMAND_TAIL,  // just processed some prefix of a command; skip the rest.
 } SerInState;
 SerInState serInState;
@@ -128,7 +129,7 @@ void InitializeBasicBus(byte id, byte paramCount, unsigned short* params)
     RX_TRIS.RX_PIN = 1;
     RX_ANSEL.RX_PIN = 0;
 
-	serInState = IN_LINE_START;
+	serInState = AT_LINE_START;
 
     bbMasterStatus = ' ';  // A convenient default status.
 	
@@ -265,7 +266,7 @@ void putFixed(fixed16 f)
 	putnibble(FIXED_INTEGRAL(f));
 }
 
-// Returns the next character, or \0 if there's none available.
+// Returns the next character.
 // Assumes there's something there!
 byte getc(void)
 {
@@ -442,14 +443,14 @@ byte ProcessBBCommands(void) {
 		switch(serInState) {
 		case IN_GARBAGE:
 			if (getc() == '\n') {
-				serInState = IN_LINE_START;
+				serInState = AT_LINE_START;
 			}
 			break;
 			
-		case IN_LINE_START:
+		case AT_LINE_START:
 			switch(getc()) {
 			case '~':
-				serInState = IN_COMMAND;
+				serInState = BETWEEN_COMMANDS;
 				break;
             case '\r':
 			case '\n':
@@ -460,8 +461,21 @@ byte ProcessBBCommands(void) {
 			}
 			break;
 
-		case IN_COMMAND:
-			if (length(serialInput) >= 3 && contains(serialInput, '\n')) {  // wait till we have the whole line.
+        case BETWEEN_COMMANDS:
+            // Remove leading whitespace.
+            // This is important to ensure the buffer gets cleared after the last command on a line.
+            while (peekc() == ' ')
+                getc();
+            if (peekc() == '\n') {
+                getc();
+                serInState = AT_LINE_START;
+            } else
+                serInState = AT_COMMAND;
+            break;
+
+		case AT_COMMAND:
+            // Wait till we have the whole line.
+			if (contains(serialInput, '\n')) {
 				if (length(serialInput) >= 3) {
 					switch(getc()) {
 
@@ -553,13 +567,13 @@ byte ProcessBBCommands(void) {
 						break;
 
                     case '\n':
-                        serInState = IN_LINE_START;
+                        serInState = AT_LINE_START;
                         break;
 						
 					default:
 						// Unrecognized command.
 						// Skip to the next space or newline.
-                        while (!isspace(peekc()))
+                        while (!isEmpty(serialInput) && !isspace(peekc()))
                             getc();
 						break;
 					}
@@ -573,7 +587,7 @@ byte ProcessBBCommands(void) {
 				// If the buffer's full, there's nothing we can do, so discard and wait longer.
 				if (isFull<SERIAL_BUFLEN>(serialInput))
 					serInState = IN_GARBAGE;
-				// It's not full, so just wait for more.
+				// Even if it's not full, we need to wait for more.
 				return result;
 			}
 			break;
@@ -581,9 +595,9 @@ byte ProcessBBCommands(void) {
         case IN_COMMAND_TAIL:
             // Skip any unrecognized junk in a command we don't recognize,
             // or at the end of a command we have processed.
-            while (!isspace(peekc()))
+            while (!isEmpty(serialInput) && !isspace(peekc()))
                 getc();
-            serInState = IN_COMMAND;
+            serInState = BETWEEN_COMMANDS;
             break;
         
 		default:
