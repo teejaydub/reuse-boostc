@@ -81,5 +81,11 @@ void SendBBFixedReading(byte code, fixed16 value);
 // e.g. to make room for an urgent next message.
 void ClearBBOutput(void);
 
+
+// Put a string out on the bus, outside of commands, for diagnostics.
+// Note that this takes over as the selected slave, so that you can see the output;
+// it'll cause havoc if called in a multi-slave environment.
+void putsBB(const char* s);
+
 #endif
 // __BASICBUS_H

@@ -209,6 +209,12 @@ void puts(const char* s)
 		putc(*s++);
 }
 
+void putsBB(const char* s) {
+    if (!isSelectedSlave)
+        beSelectedSlave(true);
+    puts(s);
+}
+
 void putnibble(byte n)
 {
 	if (n <= 9)
