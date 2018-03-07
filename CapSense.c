@@ -44,7 +44,7 @@ byte csDownInBin[MAX_CAPSENSE_CHANNELS];
 byte csLastBinTicks;
 
 byte csLastButtonTicks;
-byte csLastDownPolls;  // Set to zero when any button is down, incremented when no button is down, up to 255.
+byte csPollsSinceDown;  // Set to zero when any button is down, incremented when no button is down, up to 255.
 
 // Set to one of the channels when that button is down, or NO_CAPSENSE_BUTTONS if none are down.
 // Will often still be down after GetCapSenseButton() has cleared csButton.
@@ -197,7 +197,7 @@ void InitCapSense(void)
 	memset(csBaseline, 0, sizeof(csBaseline));  // Set to zero to prevent any presses until we've had time to stabilize.
 	memset(csReadings, 0, sizeof(csReadings));
 	csLastBinTicks = ticks;
-	csLastDownPolls = 255;
+	csPollsSinceDown = 255;
 	csHoldingButton = NO_CAPSENSE_BUTTONS;
 	memset(csDownInBin, 0, sizeof(csDownInBin));
 	
@@ -233,18 +233,22 @@ inline void BumpCapSenseBin(void)
 		csCurrentBin = 0;
 	
 	// Find the global max again, over all bins, for all channels.
-	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
-	csBaseline[0] = max(csBin[0][0], csBin[0][1]);
-	#endif
-	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL1
-	csBaseline[1] = max(csBin[1][0], csBin[1][1]);
-	#endif
-	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2
-	csBaseline[2] = max(csBin[2][0], csBin[2][1]);
-	#endif
-	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3
-	csBaseline[3] = max(csBin[3][0], csBin[3][1]);
-	#endif
+    #if NUM_CAPSENSE_BINS == 2
+    	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
+    	csBaseline[0] = max(csBin[0][0], csBin[0][1]);
+    	#endif
+    	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL1
+    	csBaseline[1] = max(csBin[1][0], csBin[1][1]);
+    	#endif
+    	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2
+    	csBaseline[2] = max(csBin[2][0], csBin[2][1]);
+    	#endif
+    	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3
+    	csBaseline[3] = max(csBin[3][0], csBin[3][1]);
+    	#endif
+    #else
+        #error "Recode the loop unrolling in BumpCapSenseBin() for this value of NUM_CAPSENSE_BINS."
+    #endif
 
 	// Reset each channel's newly-current bin to contain just that channel's most-recent reading.
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
@@ -294,7 +298,8 @@ inline void BumpCapSenseChannel(void)
 byte CapSenseISR(void)
 {
 	if (UiTimeInterrupt()) {
-		// Read TMR1.
+        // Timer 0 has rolled over recently.
+		// Read TMR1: it's the number of times the oscillator has cycled since the last rollover.
 		CapSenseReading reading = (tmr1h << 8) | tmr1l;
 		
 		// Do some of the indexing once.
@@ -312,7 +317,7 @@ byte CapSenseISR(void)
 			threshold = CS_MIN_THRESHOLD;
 		
 		// Filter the new value.
-		// Running average, over FILTER_LENGTH samples.
+		// Exponential weighted moving average, over FILTER_LENGTH samples.
 		reading = *currentReading + (reading - *currentReading) / FILTER_LENGTH;
 		*currentReading = reading;
 
@@ -320,13 +325,13 @@ byte CapSenseISR(void)
 		if (reading < threshold) {
 			// Yes, it's "down."
 			if (csButton == NO_CAPSENSE_BUTTONS && csHoldingButton == NO_CAPSENSE_BUTTONS
-				&& csLastDownPolls > DEBOUNCE_POLLS  // debounce by number of polls - ~<= 1000/sec.
+				&& csPollsSinceDown > DEBOUNCE_POLLS  // debounce by number of polls - ~<= 1000/sec.
 			) {
 				// And this is the falling edge: note it.
 				csButton = currentCapSenseChannel;
 				csLastButtonTicks = ticks;
 				csHoldingButton = currentCapSenseChannel;
-				csLastDownPolls = 0;
+				csPollsSinceDown = 0;
 				csDownInBin[csCurrentBin] = true;
 			}
 		} else {
@@ -335,24 +340,19 @@ byte CapSenseISR(void)
 			if (csHoldingButton == currentCapSenseChannel)
 				csHoldingButton = NO_CAPSENSE_BUTTONS;
 				
-			if (csHoldingButton == NO_CAPSENSE_BUTTONS && csLastDownPolls < 255)
-				++csLastDownPolls;
+			if (csHoldingButton == NO_CAPSENSE_BUTTONS && csPollsSinceDown < 255)
+				++csPollsSinceDown;
 		}
 	
-		// Update the current bin's extreme.
-		// But not if this button is down... 
-		CapSenseReading* currentMax;
-		if ((csHoldingButton == NO_CAPSENSE_BUTTONS && csLastDownPolls > DEBOUNCE_POLLS)
-			// ... until it's been down for a really long time.
-			|| (ticks - csLastButtonTicks) >= 0 * TICKS_PER_SEC
-		) {
-			//accumulateMax<CapSenseReading>(&csBin[currentCapSenseChannel][csCurrentBin], reading);
-			// That works, but the resulting function call uses one too many stack levels.
-			currentMax = &csBin[currentCapSenseChannel][csCurrentBin];
-			
-			if (reading > *currentMax)
-				*currentMax = reading;
-		}
+		// Update the current bin's maximum.
+		//accumulateMax<CapSenseReading>(&csBin[currentCapSenseChannel][csCurrentBin], reading);
+		// That works, but the resulting function call uses one too many stack levels.
+        CapSenseReading* currentMax = &csBin[currentCapSenseChannel][csCurrentBin];
+		if (reading > *currentMax)
+            // But use an exponential moving average instead of accumulating directly.
+			*currentMax = *currentMax + (reading - *currentMax) / FILTER_LENGTH;
+            // *currentMax = reading;
+
 #ifdef CS_AUTO_CALIBRATE
 		// During calibration, keep track of the minima as well.
 		if (csAutoCalibrateState == acPressAndReleaseButton)
