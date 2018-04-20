@@ -518,7 +518,17 @@ byte ProcessBBCommands(void) {
 									putNewline();
 								#endif
 							}
-						}
+						} else if (peekc() == '!') {
+                            // "P!": Reset all parameters.
+                            #ifdef LOGGING
+                            ensureNewline();
+                            puts("P!");
+                            putNewline();
+                            #endif
+
+                            ResetBBParams();
+                            EnqueueBBParameters();
+                        }
 						serInState = IN_COMMAND_TAIL;
 						break;
 

@@ -55,6 +55,11 @@ byte PollBasicBus(void);
 // The new value is already in the params buffer sent to InitializeBasicBus().
 void BBParameter(byte index);
 
+// Implement this in the calling code.
+// It's called when the master has requested that all parameters be reset.
+// After it returns, all parameters are scheduled to send out.
+void ResetBBParams(void);
+
 // Call this when the given parameter has changed, to schedule it for sending out.
 void ChangedBBParameter(byte index);
 

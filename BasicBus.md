@@ -151,7 +151,7 @@ The following commands are sent from the master:
     Selects whatever slave is currently connected (should be only one).  
     The slave responds with its Status, within 100 ms.
 
-The following commands are to be executed only by the currently-selected slave:
+The following commands from the master are to be executed only by the currently-selected slave:
 
 * #=b  
     Sets the slave's index to b, permanently.  
@@ -160,6 +160,9 @@ The following commands are to be executed only by the currently-selected slave:
     during setup, like "~?=* #=1".
 * Pn=w  
     Tells the slave to set parameter n (0-relative byte)'s to the new value w (word).
+* P!
+    Tells the slave to reset all its parameters to their defaults.
+    The slave responds as for ?*.
 * ?S  
     Requests the slave's status, as an S=n response.
 * ?P  
