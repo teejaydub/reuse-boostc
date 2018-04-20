@@ -40,8 +40,13 @@ CapSenseReading csMin[MAX_CAPSENSE_CHANNELS];
 // This is set if a button was pressed during the current bin - includes held down.
 byte csDownInBin[MAX_CAPSENSE_CHANNELS];
 
-#define TICKS_PER_BIN_CHANGE  1
+#define TICKS_PER_BIN_CHANGE  240
 byte csLastBinTicks;
+
+// Do the first few bin switches more quickly.
+// This helps get good baseline values in place.
+#define TICKS_PER_BIN_CHANGE_INITIAL  1
+byte csBinSwitches;
 
 byte csLastButtonTicks;
 byte csPollsSinceDown;  // Set to zero when any button is down, incremented when no button is down, up to 255.
@@ -193,6 +198,7 @@ void InitCapSense(void)
 	
 	// Clear all bins.
 	csCurrentBin = 0;
+    csBinSwitches = 0;
 	memset(csBin, 0, sizeof(csBin)); 
 	memset(csBaseline, 0, sizeof(csBaseline));  // Set to zero to prevent any presses until we've had time to stabilize.
 	memset(csReadings, 0, sizeof(csReadings));
@@ -266,6 +272,9 @@ inline void BumpCapSenseBin(void)
 	
 	csLastBinTicks = ticks;
 	csDownInBin[csCurrentBin] = false;
+
+    if (csBinSwitches < NUM_CAPSENSE_BINS)
+        ++csBinSwitches;
 }
 
 inline void BumpCapSenseChannel(void)
@@ -359,8 +368,12 @@ byte CapSenseISR(void)
 			accumulateMin<CapSenseReading>(&csMin[currentCapSenseChannel], reading);
 #endif		
 		
-		// Move to the next min bin, every other tick (about twice a second).
-		if (ticks - csLastBinTicks >= TICKS_PER_BIN_CHANGE)
+		// Move to the next min bin, every once in a while.
+        // This allows us to adapt to changes in baseline capacitance (because it's gotten colder or wetter, e.g.)
+        // without adjusting too soon simply because the user has held a button down for a while.
+		if (ticks - csLastBinTicks >= TICKS_PER_BIN_CHANGE
+            || (csBinSwitches < NUM_CAPSENSE_BINS && ticks - csLastBinTicks >= TICKS_PER_BIN_CHANGE_INITIAL)
+            )
 			BumpCapSenseBin();
 	
 		// Move to the next sensor.
