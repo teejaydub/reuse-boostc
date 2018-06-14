@@ -75,7 +75,6 @@ CapSenseReading csMin[MAX_CAPSENSE_CHANNELS];
 // This is set if a button was pressed during the current bin - includes held down.
 byte csDownInBin[MAX_CAPSENSE_CHANNELS];
 
-#define TICKS_PER_BIN_CHANGE  (60 * TICKS_PER_SEC)
 byte csLastBinTicks;
 
 // Do the first few bin switches more quickly.
@@ -433,10 +432,10 @@ void CapSenseISRDone(void)
 
 #ifdef CS_AUTO_CALIBRATE
 
-#define SETTLE_TICKS  (TICKS_PER_BIN_CHANGE * NUM_CAPSENSE_BINS + 1)  // Allow time for all bins to be overwritten.
+#define SETTLE_TICKS  (TICKS_PER_BIN_CHANGE_INITIAL * NUM_CAPSENSE_BINS + 1)  // Allow time for all bins to be overwritten.
 byte ticksStateStart;
 
-#define TIMES_THRU_BUTTONS  3
+#define TIMES_THRU_BUTTONS  2
 byte timesThruButtons;
 
 #ifdef CS_AUTO_CALIBRATE
