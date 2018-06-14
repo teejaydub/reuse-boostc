@@ -132,11 +132,19 @@ Commands and responses may be grouped together on a line, separated by spaces.
 
 Examples, with newline represented as `\n`:
 
+"Master status is 5" (good to report periodically)
     ~S=5\n
-    ~?=* #=1 *=1\n
-    ~P?
+"Set the connected slave's index to 1" (when provisioning a new device, set its index to a known value)
+    ~?=* #=1\n
+"Read all parameters, all variable values, and a specific additional one"
+(the slave may hide some variables except on request)
+    ~?P ?* ?V
+"Set parameter 0 to 37"
     ~P0=37
+"Set variable T to 43.22"
     ~T=43.22
+"Regular status exchange"
+    ~S=4 ?=* ?*
 
 ### Master commands
 
