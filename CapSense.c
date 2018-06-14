@@ -1,6 +1,41 @@
 /* CapSense.c
 	Using capacitive touch sensing to simulate up to 4 pushbuttons.
 	Follows the guidelines set out in Microchip's AN1101 and AN1103.
+
+    Readings are made of the time it takes to charge and discharge the touch pad, acting as a capacitor.
+    Read by using Timer 1 as a free-running counter of pulses, and Timer 0 as a periodic interrupt
+    to sample that counter.
+
+    Timer 0 rolls over every 1.024 ms, and the timer 1 value at that time becomes the next reading.
+
+    Readings are filtered using an exponential weighted moving average, to reduce the effects of noise.
+
+    Generally, readings are about the same when the system is in a steady state.
+    When the user touches a pad, capacitance increases, cycle time lengthens, and Timer 1 counts drop.
+    So, if readings drop sharply, it's a button press.
+
+    We choose a value for the "normal" steady-state reading and call this the "baseline."
+
+    The baseline is not consistent across devices, though, or even placement of a device
+    (relative to ferrous materials, water, whether the user is holding it, etc.).  So dynamic
+    calibration is required.
+
+    For each channel, we have several "bins", that we switch among round-robin,
+    every TICKS_PER_BIN_CHANGE (for "ticks" occurring at roughly four times a second).
+
+    We track the maximum (filtered) reading for each bin, and the maximum of all previous bins
+    becomes the baseline until we next change bins.
+
+    So, if all readings go down for a given channel, we'll adjust that channel's baseline down
+    after TICKS_PER_BIN_CHANGE / TICKS_PER_SEC * NUM_CAPSENSE_BINS seconds.
+    When I wrote this, those settings worked out to a little over 2 minutes (in theory).
+
+    We also have a "threshold," that determines how far below the baseline a reading can go
+    before it's recognized as a button press.  The threshold is calibrated once and hard-coded,
+    per channel.  The smaller the threshold, the easier it is to get a button press.
+    
+    If thresholds are smaller than the overall noise level in the system, false-positive
+    button presses can occur - buttons being pressed when the user doesn't intend to.
 */
 
 #define IN_CAPSENSE
@@ -40,7 +75,7 @@ CapSenseReading csMin[MAX_CAPSENSE_CHANNELS];
 // This is set if a button was pressed during the current bin - includes held down.
 byte csDownInBin[MAX_CAPSENSE_CHANNELS];
 
-#define TICKS_PER_BIN_CHANGE  240
+#define TICKS_PER_BIN_CHANGE  (60 * TICKS_PER_SEC)
 byte csLastBinTicks;
 
 // Do the first few bin switches more quickly.
@@ -199,7 +234,7 @@ void InitCapSense(void)
 	// Clear all bins.
 	csCurrentBin = 0;
     csBinSwitches = 0;
-	memset(csBin, 0, sizeof(csBin)); 
+	memset(csBinMax, 0, sizeof(csBinMax)); 
 	memset(csBaseline, 0, sizeof(csBaseline));  // Set to zero to prevent any presses until we've had time to stabilize.
 	memset(csReadings, 0, sizeof(csReadings));
 	csLastBinTicks = ticks;
@@ -241,16 +276,16 @@ inline void BumpCapSenseBin(void)
 	// Find the global max again, over all bins, for all channels.
     #if NUM_CAPSENSE_BINS == 2
     	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
-    	csBaseline[0] = max(csBin[0][0], csBin[0][1]);
+    	csBaseline[0] = max(csBinMax[0][0], csBinMax[0][1]);
     	#endif
     	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL1
-    	csBaseline[1] = max(csBin[1][0], csBin[1][1]);
+    	csBaseline[1] = max(csBinMax[1][0], csBinMax[1][1]);
     	#endif
     	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2
-    	csBaseline[2] = max(csBin[2][0], csBin[2][1]);
+    	csBaseline[2] = max(csBinMax[2][0], csBinMax[2][1]);
     	#endif
     	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3
-    	csBaseline[3] = max(csBin[3][0], csBin[3][1]);
+    	csBaseline[3] = max(csBinMax[3][0], csBinMax[3][1]);
     	#endif
     #else
         #error "Recode the loop unrolling in BumpCapSenseBin() for this value of NUM_CAPSENSE_BINS."
@@ -258,16 +293,16 @@ inline void BumpCapSenseBin(void)
 
 	// Reset each channel's newly-current bin to contain just that channel's most-recent reading.
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL0
-	csBin[0][csCurrentBin] = csReadings[0];
+	csBinMax[0][csCurrentBin] = csReadings[0];
 	#endif
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL1
-	csBin[1][csCurrentBin] = csReadings[1];
+	csBinMax[1][csCurrentBin] = csReadings[1];
 	#endif
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL2
-	csBin[2][csCurrentBin] = csReadings[2];
+	csBinMax[2][csCurrentBin] = csReadings[2];
 	#endif
 	#if CAPSENSE_CHANNELS & CAPSENSE_CHANNEL3
-	csBin[3][csCurrentBin] = csReadings[3];
+	csBinMax[3][csCurrentBin] = csReadings[3];
 	#endif
 	
 	csLastBinTicks = ticks;
@@ -354,9 +389,9 @@ byte CapSenseISR(void)
 		}
 	
 		// Update the current bin's maximum.
-		//accumulateMax<CapSenseReading>(&csBin[currentCapSenseChannel][csCurrentBin], reading);
+		//accumulateMax<CapSenseReading>(&csBinMax[currentCapSenseChannel][csCurrentBin], reading);
 		// That works, but the resulting function call uses one too many stack levels.
-        CapSenseReading* currentMax = &csBin[currentCapSenseChannel][csCurrentBin];
+        CapSenseReading* currentMax = &csBinMax[currentCapSenseChannel][csCurrentBin];
 		if (reading > *currentMax)
             // But use an exponential moving average instead of accumulating directly.
 			*currentMax = *currentMax + (reading - *currentMax) / FILTER_LENGTH;

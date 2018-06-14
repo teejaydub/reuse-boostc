@@ -44,7 +44,8 @@ typedef signed short CapSenseReading;
 
 // These are just in the header to facilitate debugging.
 #define NUM_CAPSENSE_BINS  2
-CAPSENSE_EXTERN CapSenseReading csBin[MAX_CAPSENSE_CHANNELS][NUM_CAPSENSE_BINS];
+// The maximum reading, per channel, in multiple bins so we can refer to previous maxes while accumulating a new one.
+CAPSENSE_EXTERN CapSenseReading csBinMax[MAX_CAPSENSE_CHANNELS][NUM_CAPSENSE_BINS];
 CAPSENSE_EXTERN byte csCurrentBin;
 
 
