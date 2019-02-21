@@ -69,7 +69,7 @@ inline void clearP(ByteBuf* bb)
 template <int maxLen>
 inline void push(ByteBuf& bb, byte b)
 {
-	if (bb.lenUsed <= maxLen) {
+	if (bb.lenUsed < maxLen) {
 		bb.buffer[bb.lenUsed++] = b;
 	}
 }

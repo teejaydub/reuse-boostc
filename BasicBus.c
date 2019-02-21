@@ -28,7 +28,7 @@
 #include "byteBuffer.h"
 
 // Define this for concise logging about commands received and processed.
-// Define it to "2" to also see every character received.
+// Define it to "2" to also see every character received - not very stable, but good for debugging.
 #define LOGGING  1
 // #undef LOGGING
 
@@ -149,10 +149,10 @@ byte BasicBusISR(void)
     if (pir1.RCIF) {
         byte c;
         if (rcsta.FERR) {
+            // Framing error, meaning something got trashed; throw away whatever we have.
             c = rcreg;
-            #ifdef LOGGING
+            clear(serialInput);
             lastSerialError = '#';
-            #endif
         } else {
             c = rcreg;
             if (rcsta.OERR) {
@@ -160,9 +160,12 @@ byte BasicBusISR(void)
                 rcsta.CREN = 0;
                 clear(serialInput);
                 rcsta.CREN = 1;
-                #ifdef LOGGING
                 lastSerialError = '!';
-                #endif
+            } else if (isFull<SERIAL_BUFLEN>(serialInput)) {
+                // Not enough room - so discard everything, so we can keep up.
+                // Nothing will get through until the rate decreases, but at least what does get through is reliable.
+                clear(serialInput);
+                lastSerialError = '*';
             } else {
                 push<SERIAL_BUFLEN>(serialInput, c);
                 #if defined(LOGGING) && (LOGGING >= 2)
@@ -407,13 +410,16 @@ void ClearBBOutput(void)
 
 byte PollBasicBus(void)
 {
-    #ifdef LOGGING
     if (lastSerialError) {
+        #ifdef LOGGING
         putc(lastSerialError);
-        lastSerialError = '\0';
         putc('\n');
+        #endif
+
+        // If there was any serial error, reset the current state to "garbage" and start from scratch.
+        serInState = IN_GARBAGE;
+        lastSerialError = '\0';
     }
-    #endif
 
     // Process pending input commands from the master.
     byte result = ProcessBBCommands();
@@ -528,6 +534,7 @@ byte ProcessBBCommands(void) {
 
                             ResetBBParams();
                             EnqueueBBParameters();
+                            result = true;
                         }
 						serInState = IN_COMMAND_TAIL;
 						break;
@@ -538,14 +545,20 @@ byte ProcessBBCommands(void) {
                         case '=':  // Select slave, ?=<decimal byte> or ?=*
                             getc();
                             if (peekc() == '*') {
+                                // Select whoever is listening as a slave - therefore, me.
                                 beSelectedSlave(true);
                                 result = true;
                             } else if (isdigit(peekc())) {
+                                // Select a slave by ID.
                                 byte targetID = readDecimal<byte>();
                                 if (slaveID == targetID) {
+                                    // And it's my ID.
                                     beSelectedSlave(true);
-                                    result = true;
+                                } else {
+                                    // And it's not my ID.
+                                    beSelectedSlave(false);
                                 }
+                                result = true;
                             }
                             break;
 
