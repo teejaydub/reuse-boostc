@@ -99,10 +99,10 @@ inline void fixedFracTo(fixed16 f, unsigned char& frac)
 // Returns the fractional part of f as positive fixed-point.
 inline fixed16 fixedFrac(fixed16 f)
 {
-	if (f < 0)
-		f = -f;
-		
-	return f & 0x00FF;
+	fixed16 result = f & 0x00FF;
+    if (f < 0 && result != 0)
+        result = 0x100 - result;
+    return result;
 }
 
 // Returns the integral portion of f.
@@ -131,6 +131,30 @@ inline unsigned char fixedTenths(fixed16 f)
 	tempFixed += FIXED_ONE_HALF;  // Round to the nearest tenth by adding 0.5 (of a tenth).
 	
 	return FIXED_INTEGRAL(tempFixed);  // Truncate and return.
+}
+
+// Round f to the nearest tenth, and unpack it into a signed integer value
+// and an unsigned number of tenths, from 0-9.
+inline void fixedRoundToTenths(fixed16 f, signed char& units, unsigned char& tenths)
+{
+	fixed16 tempFixed;
+	tempFixed = fixedFrac(f);  // Just the fractional part, positive.
+	tempFixed *= 10;  // Convert to tenths.
+	tempFixed += FIXED_ONE_HALF;  // Round to the nearest tenth by adding 0.5 (of a tenth).
+    
+    tenths = FIXED_INTEGRAL(tempFixed);
+    units = FIXED_INTEGRAL(f);
+
+    // Curious feature of two's-complement arithmetic with fixed-point numbers.
+    // E.g., 0xFFFF = -1/256, not -1 - 1/256.
+    if (units < 0 && ((f & 0x00FF) != 0))
+        units += 1;
+    
+    // Adjust for overflow when rounding up.
+    if (tenths > 9) {
+        tenths -= 10;
+        units += 1;
+    }
 }
 
 // Returns the integral part of f, as a two's-complement value.
