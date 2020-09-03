@@ -99,10 +99,9 @@ inline void fixedFracTo(fixed16 f, unsigned char& frac)
 // Returns the fractional part of f as positive fixed-point.
 inline fixed16 fixedFrac(fixed16 f)
 {
-	fixed16 result = f & 0x00FF;
-    if (f < 0 && result != 0)
-        result = 0x100 - result;
-    return result;
+	if (f < 0)
+		f = -f;
+	return f & 0x00FF;
 }
 
 // Returns the integral portion of f.
