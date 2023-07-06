@@ -138,13 +138,13 @@ Examples, with newline represented as `\n`:
     ~?=* #=1\n
 "Read all parameters, all variable values, and a specific additional one"
 (the slave may hide some variables except on request)
-    ~?P ?* ?V
+    ~?P ?* ?V\n
 "Set parameter 0 to 37"
-    ~P0=37
+    ~P0=37\n
 "Set variable T to 43.22"
-    ~T=43.22
+    ~T=43.22\n
 "Regular status exchange"
-    ~S=4 ?=* ?*
+    ~S=4 ?=* ?*\n
 
 ### Master commands
 
