@@ -52,6 +52,10 @@ A maximum resistance of 1.1 Ohm/meter is recommended.
 Connectors are RJ11, 6-position, 4-conductor (6P4C), though 6P6C (aka RJ14) are also compatible. 
 These are American "plain old telephone service" (POTS) connectors.
 
+If 6P6C/RJ14 connectors and 6-pin cables are used, two extra lines are
+available, which can be used e.g. for controlling a programming bootloader.
+See the BasicBus Transceiver project for a reference design.
+
 ### Straight-wired cables
 
 Cables MUST be wired "straight" - meaning the RJ11 plugs have opposite orientations on either end.
@@ -66,9 +70,6 @@ This results in cables looking like this, viewing the plugs end-on:
     |    |============|    |
      ----              -__-
      1234              4321
-
-This pin numbering seems to be consistently followed for jacks I've seen.  
-The colors indicated are one convention, though the reverse can also be used.
 
 Another test for straight wiring: If you line up the two plugs at opposite ends of the cable
 so that the conductors are visible and parallel, like this:
@@ -113,12 +114,11 @@ it must leave MISO floating.
 
 ### Termination
 
-The Master is responsible for pulling MISO up to V+ using a
-20K resistor to prevent noise while Slaves pass off control of the
-MISO line. If it does not provide this pullup, it must take
-responsibility to wait 100 ms after selecting a Slave before it
-listens to the MISO line.  (This may result in missing the response, so it may
-require selecting the Slave again.)
+The Master is responsible for pulling MISO up to V+ using a 20K resistor to
+prevent noise while Slaves pass off control of the MISO line. If it does not
+provide this pullup, it must take responsibility to wait 100 ms after
+selecting a Slave before it listens to the MISO line.  (This may result in
+missing the response, so it may require selecting the Slave again.)
 
 TBD: 
 * pullups on Slaves?
@@ -130,7 +130,7 @@ Commands and responses must be on a line (newline-delimited) that starts with '~
 
 Commands and responses may be grouped together on a line, separated by spaces.
 
-Examples, with newline represented as `\n`:
+Examples first, with newline represented as `\n`:
 
 "Master status is 5" (good to report periodically)
     ~S=5\n
@@ -153,10 +153,10 @@ The following commands are sent from the master:
 * S=b  
     Reports the master status, b.
 * ?=b  
-    Selects the slave with index b.  All other slaves should disconnect from the MISO line.
+    Selects the slave with index b.  All other slaves should disconnect from the MISO line within 30 ms.
     The slave responds with its Status, within 100 ms.
 * ?=*  
-    Selects whatever slave is currently connected (should be only one).  
+    Selects whatever slave is currently connected (should be only one).
     The slave responds with its Status, within 100 ms.
 
 The following commands from the master are to be executed only by the currently-selected slave:
