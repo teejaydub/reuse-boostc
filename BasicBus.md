@@ -143,6 +143,8 @@ Examples first, with newline represented as `\n`:
     ~P0=37\n
 "Set variable T to 43.22"
     ~T=43.22\n
+"Request variable V"
+    ~?V\n
 "Regular status exchange"
     ~S=4 ?=* ?*\n
 
