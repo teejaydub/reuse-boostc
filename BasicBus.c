@@ -25,22 +25,34 @@
 
 #include "BasicBus.h"
 
-#include "byteBuffer.h"
+#ifdef SERIAL_LOGGER
+ // Store serial input in a circular buffer, so we can always browse backward.
+ #include "circBuffer.h"
+#else
+ // Store it in a linear buffer; a little more efficient in code.
+ #include "byteBuffer.h"
+#endif
 
 // Define this for concise logging about commands received and processed.
 // Define it to "2" to also see every character received - not very stable, but good for debugging.
 #define LOGGING  1
 // #undef LOGGING
 
-#define SERIAL_BUFLEN  48
+#ifdef SERIAL_LOGGER
+ #define SERIAL_IN_BUFLEN  255
+ #define SERIAL_OUT_BUFLEN  48
+#else
+ #define SERIAL_IN_BUFLEN  48
+ #define SERIAL_OUT_BUFLEN  48
+#endif
 
 #define MAX_VARIABLES  10
 
 byte slaveID;
 byte isSelectedSlave = false;
 
-byte serialOutputBuffer[SERIAL_BUFLEN];
-byte serialInputBuffer[SERIAL_BUFLEN];
+byte serialOutputBuffer[SERIAL_OUT_BUFLEN];
+byte serialInputBuffer[SERIAL_IN_BUFLEN];
 
 ByteBuf serialInput;
 ByteBuf serialOutput;
@@ -80,6 +92,12 @@ typedef enum {
 	IN_COMMAND_TAIL,  // just processed some prefix of a command; skip the rest.
 } SerInState;
 SerInState serInState;
+
+#ifdef SERIAL_LOGGER
+byte serialLogIndex = 0;  // where we are in the buffer
+byte serialLogCharsLeft = 0;  // how many characters we have left to stream out.
+#endif
+
 
 // Forward declarations
 byte ProcessBBCommands(void);
@@ -161,13 +179,13 @@ byte BasicBusISR(void)
                 clear(serialInput);
                 rcsta.CREN = 1;
                 lastSerialError = '!';
-            } else if (isFull<SERIAL_BUFLEN>(serialInput)) {
+            } else if (isFull<SERIAL_IN_BUFLEN>(serialInput)) {
                 // Not enough room - so discard everything, so we can keep up.
                 // Nothing will get through until the rate decreases, but at least what does get through is reliable.
                 clear(serialInput);
                 lastSerialError = '*';
             } else {
-                push<SERIAL_BUFLEN>(serialInput, c);
+                push<SERIAL_IN_BUFLEN>(serialInput, c);
                 #if defined(LOGGING) && (LOGGING >= 2)
                 putc('>');
                 putc(c);
@@ -189,7 +207,7 @@ byte BasicBusISR(void)
 void putc(char c)
 {
     if (isSelectedSlave) {
-        push<SERIAL_BUFLEN>(serialOutput, c);
+        push<SERIAL_OUT_BUFLEN>(serialOutput, c);
         justSentNewline = (c == '\n');
     }
 }
@@ -279,7 +297,7 @@ void putFixed(fixed16 f)
 // Assumes there's something there!
 byte getc(void)
 {
-	return pop(serialInput);
+	return pop(SERIAL_IN_BUFLEN, serialInput);
 }
 
 byte peekc(void)
@@ -314,14 +332,14 @@ T readDecimal(void)
 // Notes that we should re-send this variable later.
 void EnqueueVariable(byte code)
 {
-    if (!contains(queuedVariables, code))
+    if (!contains<MAX_VARIABLES>(queuedVariables, code))
         push<MAX_VARIABLES>(queuedVariables, code);
 }
 
 // Returns true if there's room in the output buffer for one more parameter or variable.
 inline bool CanWriteParam(void)
 {
-    return serialOutput.lenUsed + ONE_PARAM_LEN < SERIAL_BUFLEN;
+    return length(serialOutput) + ONE_PARAM_LEN < SERIAL_OUT_BUFLEN;
 }
 
 // Sends the given parameter, and returns true if there was room.
@@ -404,12 +422,30 @@ void ClearBBOutput(void)
     justSentNewline = false;
 }
 
+#ifdef SERIAL_LOGGER
+void DumpSerialLog(void)
+{
+    serialLogIndex = serialInput.writeIndex;
+    serialLogCharsLeft = SERIAL_IN_BUFLEN;
+}
+#endif
+
 
 //============================================================================
 // High-level processing
 
 byte PollBasicBus(void)
 {
+    #ifdef SERIAL_LOGGER
+    // Push characters to transmit from the serial history.
+    if (pir1.TXIF && serialLogCharsLeft > 0) {
+        txreg = serialInput.buffer[serialLogIndex];
+        incIndex(SERIAL_IN_BUFLEN, serialLogIndex);
+        --serialLogCharsLeft;
+        return false;
+    }
+    #endif
+
     if (lastSerialError) {
         #ifdef LOGGING
         putc(lastSerialError);
@@ -426,7 +462,7 @@ byte PollBasicBus(void)
 
 	// Push characters to transmit.
 	if (pir1.TXIF && !isEmpty(serialOutput))
-		txreg = pop(serialOutput);
+		txreg = pop(SERIAL_OUT_BUFLEN, serialOutput);
 		
 	// If we're waiting to report some parameters, and there's room, send 'em out.
 	if (AnyBBParamsQueued()) {
@@ -437,7 +473,7 @@ byte PollBasicBus(void)
     } else if (!isEmpty(queuedVariables)) {
         if (CanWriteParam())
         // If we're waiting to send some variables, and there's room, send the next one.
-            OnBBRequest(pop(queuedVariables));
+            OnBBRequest(pop(SERIAL_OUT_BUFLEN, queuedVariables));
     } else if (wildcardUnderway) {
         // We were responding to a wildcard request, but everything's now been sent.
         ensureNewline();
@@ -487,7 +523,7 @@ byte ProcessBBCommands(void) {
 
 		case AT_COMMAND:
             // Wait till we have the whole line.
-			if (contains(serialInput, '\n')) {
+			if (contains<SERIAL_IN_BUFLEN>(serialInput, '\n')) {
 				if (length(serialInput) >= 3) {
 					switch(getc()) {
 
@@ -614,7 +650,7 @@ byte ProcessBBCommands(void) {
 			} else {
 				// Don't have a newline yet.
 				// If the buffer's full, there's nothing we can do, so discard and wait longer.
-				if (isFull<SERIAL_BUFLEN>(serialInput))
+				if (isFull<SERIAL_IN_BUFLEN>(serialInput))
 					serInState = IN_GARBAGE;
 				// Even if it's not full, we need to wait for more.
 				return result;
