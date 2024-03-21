@@ -16,9 +16,6 @@
 
 
     Implements the slave side of the protocol.
-
-    Define SERIAL_LOGGER to log serial traffic to a circular buffer, and copy
-    it to serial when requested.
 */
 
 #ifndef __BASICBUS_H
@@ -94,12 +91,6 @@ void ClearBBOutput(void);
 // Note that this takes over as the selected slave, so that you can see the output;
 // it'll cause havoc if called in a multi-slave environment.
 void putsBB(const char* s);
-
-#ifdef SERIAL_LOGGER
-// Write the whole input buffer backlog back to the output.
-// Starts at an indeterminate point.
-void DumpSerialLog(void);
-#endif
 
 #endif
 // __BASICBUS_H

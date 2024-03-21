@@ -88,7 +88,7 @@ inline byte peekP(ByteBuf* bb)
 #endif
 
 #ifndef REF_BUG
-inline byte pop(maxlen, ByteBuf& bb)
+inline byte pop(ByteBuf& bb)
 {
 	byte result = peek(bb);
 	if (++bb.readIndex > bb.lenUsed)
@@ -101,7 +101,7 @@ inline byte pop(maxlen, ByteBuf& bb)
 	return result;
 }
 #else
-#define pop(maxlen, b)  popP(&b)
+#define pop(b)  popP(&b)
 inline byte popP(ByteBuf* bb)
 {
 	byte result = peekP(bb);
@@ -143,14 +143,12 @@ inline void skip(ByteBuf& bb, byte count)
 		clear(bb);
 }
 
-template <int maxLen>
 inline void read(ByteBuf& bb, byte* data, byte count)
 {
 	strncpy(data, bb.buffer + bb.readIndex, count);
 	skip(bb, count);
 }
 
-template <int maxLen>
 inline bool contains(ByteBuf& bb, char c)
 {
 	byte* bufp = bb.buffer + bb.readIndex;
@@ -160,7 +158,6 @@ inline bool contains(ByteBuf& bb, char c)
 	return false;
 }
 
-template <int maxLen>
 inline bool containsWhitespace(ByteBuf& bb)
 {
     byte* bufp = bb.buffer + bb.readIndex;
