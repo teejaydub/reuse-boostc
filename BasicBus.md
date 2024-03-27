@@ -193,7 +193,7 @@ The following commands from the master are to be executed only by the currently-
 The slave sends these responses back to the master, when requested as above:
 
 * Pn=w  
-    Reports that parameter n (0-relative byte)'s new value is s (word).
+    Reports that parameter n (0-relative byte)'s new value is w (word).
 * S=n  
     Reports a change in the slave's status, as a byte value.
 * A=x  
