@@ -124,6 +124,9 @@ typedef enum {
 } CSAutoCalibrateResult;
 CAPSENSE_EXTERN CSAutoCalibrateResult csResults[MAX_CAPSENSE_CHANNELS];
 
+// Save csThresholds to EEPROM, so they'll be restored later.
+void CapSenseSaveThresholds(void);
+
 #endif
 // CS_AUTO_CALIBRATE
 

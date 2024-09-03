@@ -469,6 +469,11 @@ void CapSenseStartCalibrate(void)
 	EnterState(acStart);
 }
 
+void CapSenseSaveThresholds(void)
+{
+    write_eeprom_block(CAPSENSE_EEPROM_ADDR, (char*) csThresholds, CAPSENSE_EEPROM_LEN);
+}
+
 byte CapSenseContinueCalibrate(void)
 {
 	byte channel;
@@ -598,9 +603,6 @@ byte CapSenseContinueCalibrate(void)
 			}
 		}
 	
-		// Copy results back to EEPROM.
-		write_eeprom_block(CAPSENSE_EEPROM_ADDR, (char*) csThresholds, CAPSENSE_EEPROM_LEN);
-		
 		// Copy intermediate results to the start of EEPROM, so they can be conveniently read out.
 		// Overwrites whatever's there (ASCII table for the display at the moment).
 		#if 0
