@@ -44,9 +44,15 @@ typedef signed short CapSenseReading;
 
 // These are just in the header to facilitate debugging.
 #define NUM_CAPSENSE_BINS  2
+#define NUM_CAPSENSE_DOMAINS  2
 // The maximum reading, per channel, in multiple bins so we can refer to previous maxes while accumulating a new one.
 CAPSENSE_EXTERN CapSenseReading csBinMax[MAX_CAPSENSE_CHANNELS][NUM_CAPSENSE_BINS];
 CAPSENSE_EXTERN byte csCurrentBin;
+
+// Set this to reflect anything that might change the capacitance of the system or individual pads.
+// E.g., to the heater state in CoolBot.
+// Currently only zero and nonzero values are distinguished here.
+CAPSENSE_EXTERN byte csDomain;
 
 
 // Initializes the module.
@@ -90,7 +96,8 @@ void CapSenseISRDone(void);
 //==================================================================
 // Calibration
 
-CAPSENSE_EXTERN byte csThresholds[MAX_CAPSENSE_CHANNELS];
+// Thresholds come first, followed by the domain offsets.
+CAPSENSE_EXTERN byte csThresholds[NUM_CAPSENSE_DOMAINS * MAX_CAPSENSE_CHANNELS];
 
 // Turn this on in CapServe-consts.h to enable the functions below.
 #ifdef CS_AUTO_CALIBRATE

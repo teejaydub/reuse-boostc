@@ -36,6 +36,11 @@
     
     If thresholds are smaller than the overall noise level in the system, false-positive
     button presses can occur - buttons being pressed when the user doesn't intend to.
+
+    Given that CoolBot 8.0 seems to have phantom triggers when the heater is turned on,
+    define a "domain" value that the caller can set to reflects any input variable that may change the
+    capacitance of the system or the button pads.  For instance, readings when that domain
+    changes value are ignored.
 */
 
 #define IN_CAPSENSE
@@ -93,6 +98,8 @@ byte csHoldingButton;
 // if none have been pressed since the last call to GetCapSenseButton().
 byte csButton;
 
+byte domainAtChannelStart;
+
 
 //==================================================================
 // Main code
@@ -123,6 +130,8 @@ inline void SetCapSenseChannel(void)
         | BITMASK(C2R)  // C2Vin+ connects to C2Vref instead of external C12IN+
         #endif
         | currentCapSenseChannel;
+
+    domainAtChannelStart = csDomain;
 }
 
 inline void RestartCapSenseTimer(void)
@@ -344,7 +353,7 @@ byte CapSenseISR(void)
         // Timer 0 has rolled over recently.
 		// Read TMR1: it's the number of times the oscillator has cycled since the last rollover.
 		CapSenseReading reading = (tmr1h << 8) | tmr1l;
-		
+
 		// Do some of the indexing once.
 		CapSenseReading* currentBaseline = &csBaseline[currentCapSenseChannel];
 		CapSenseReading* currentReading = &csReadings[currentCapSenseChannel];
@@ -363,6 +372,10 @@ byte CapSenseISR(void)
 		// Exponential weighted moving average, over FILTER_LENGTH samples.
 		reading = *currentReading + (reading - *currentReading) / FILTER_LENGTH;
 		*currentReading = reading;
+
+        // Subtract an offset for the domain.
+        if (csDomain)
+            threshold -= csThresholds[MAX_CAPSENSE_CHANNELS + currentCapSenseChannel];
 
 		// Is it a button press?
 		if (reading < threshold) {
