@@ -112,10 +112,11 @@ byte CapSenseContinueCalibrate(void);
 
 typedef enum {
 	acStart,  // Beginning calibration.  Occurs only briefly.
-	acPressNothing,  // Don't press any buttons now.  Done after start and before end.
+	acPressNothing,  // Don't press any buttons now.  Done after start and before domain baselines.
 	acPressAndReleaseButton,  // Press and release the button specified in csButton.  
 		// This state is done three times for each button;
 		// recommended input is a light tap on each button.
+    acDomainBaselines,  // Don't press any buttons; measures change in thresholds with new domain.
 	acDone  // Finished calibration.
 } CSAutoCalibrateState;
 

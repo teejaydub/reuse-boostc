@@ -459,6 +459,9 @@ CapSenseReading csMaxHolding[MAX_CAPSENSE_CHANNELS][TIMES_THRU_BUTTONS];
 
 // Ditto, but while another button is being pressed.
 CapSenseReading csMaxOthers[MAX_CAPSENSE_CHANNELS];
+
+// Ditto, but while no buttons are being pressed but the domain is nonzero.
+CapSenseReading csMaxWaitingInDomain[MAX_CAPSENSE_CHANNELS];
 #endif
 
 
@@ -509,15 +512,23 @@ byte CapSenseContinueCalibrate(void)
 		break;
 		
 	case acPressNothing:
+    case acDomainBaselines:
 		if (ticks - ticksStateStart > SETTLE_TICKS) {
 			// Done waiting.
 			// Move mins into csMinWaiting.
 			for (channel = FIRST_CAPSENSE_CHANNEL; channel <= LAST_CAPSENSE_CHANNEL; ++channel)
-				accumulateMax<CapSenseReading>(&csMaxWaiting[channel], csBaseline[channel] - csMin[channel]);
-			
-			// Move to the first button, if this is the first "nothing down" period.
+                if (csAutoCalibrateState == acPressNothing)
+				    accumulateMax<CapSenseReading>(&csMaxWaiting[channel], csBaseline[channel] - csMin[channel]);
+                else
+                    accumulateMax<CapSenseReading>(&csMaxWaitingInDomain[channel], csBaseline[channel] - csMin[channel]);
+
+			// Move to the first button, if this is the first "press nothing" period.
 			if (timesThruButtons == 0) {
 				EnterState(acPressAndReleaseButton);
+            } else if (csDomain == 0) {
+                // If we've already done the buttons and had one following "press nothing" period,
+                // do a "press nothing while the domain is set" period.
+                EnterState(acDomainBaselines);
 			} else {
 				// Otherwise, we're done.
 				EnterState(acDone);
@@ -573,6 +584,7 @@ byte CapSenseContinueCalibrate(void)
 				// Find the maximum excursions (lowest deviation from baseline) for this channel.
 				CapSenseReading maxWaiting = csMaxWaiting[csCalButton];
 				CapSenseReading maxOthers = csMaxOthers[csCalButton];
+                CapSenseReading maxDomainOffset = csMaxWaitingInDomain[csCalButton];
 							
 				// Find the minimum and maximum readings during *this* button's presses.
 				CapSenseReading minMe = MAX_CS_READING;  // the smallest maximum excursion for the weakest press
@@ -609,10 +621,14 @@ byte CapSenseContinueCalibrate(void)
 					} else
 						csResults[csCalButton] = acrGreat;
 				}
+
+                // Set the domain offset.
+                csThresholds[MAX_CAPSENSE_CHANNELS + csCalButton] = maxDomainOffset;
 			} else {
 				// Blank out the results for unused buttons, just for completeness.
 				csResults[csCalButton] = acrFail;
 				csThresholds[csCalButton] = 0;
+                csThresholds[MAX_CAPSENSE_CHANNELS + csCalButton] = 0;
 			}
 		}
 	
