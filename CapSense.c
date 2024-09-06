@@ -506,6 +506,7 @@ byte CapSenseContinueCalibrate(void)
 		csCalButton = FIRST_CAPSENSE_CHANNEL;
 		timesThruButtons = 0;
 		InitReadingArray(csMaxWaiting, MAX_CAPSENSE_CHANNELS, 0);
+        InitReadingArray(csMaxWaitingInDomain, MAX_CAPSENSE_CHANNELS, 0);
 		InitReadingArray(csMaxHolding, MAX_CAPSENSE_CHANNELS * TIMES_THRU_BUTTONS, 0);
 		InitReadingArray(csMaxOthers, MAX_CAPSENSE_CHANNELS, 0);
 		EnterState(acPressNothing);
@@ -584,7 +585,7 @@ byte CapSenseContinueCalibrate(void)
 				// Find the maximum excursions (lowest deviation from baseline) for this channel.
 				CapSenseReading maxWaiting = csMaxWaiting[csCalButton];
 				CapSenseReading maxOthers = csMaxOthers[csCalButton];
-                CapSenseReading maxDomainOffset = csMaxWaitingInDomain[csCalButton];
+                CapSenseReading maxWaitingInDomain = csMaxWaitingInDomain[csCalButton];
 							
 				// Find the minimum and maximum readings during *this* button's presses.
 				CapSenseReading minMe = MAX_CS_READING;  // the smallest maximum excursion for the weakest press
@@ -623,7 +624,7 @@ byte CapSenseContinueCalibrate(void)
 				}
 
                 // Set the domain offset.
-                csThresholds[MAX_CAPSENSE_CHANNELS + csCalButton] = maxDomainOffset;
+                csThresholds[MAX_CAPSENSE_CHANNELS + csCalButton] = maxWaitingInDomain;
 			} else {
 				// Blank out the results for unused buttons, just for completeness.
 				csResults[csCalButton] = acrFail;
