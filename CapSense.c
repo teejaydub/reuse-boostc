@@ -39,8 +39,7 @@
 
     Given that CoolBot 8.0 seems to have phantom triggers when the heater is turned on,
     define a "domain" value that the caller can set to reflects any input variable that may change the
-    capacitance of the system or the button pads.  For instance, readings when that domain
-    changes value are ignored.
+    capacitance of the system or the button pads.
 */
 
 #define IN_CAPSENSE
@@ -98,8 +97,6 @@ byte csHoldingButton;
 // if none have been pressed since the last call to GetCapSenseButton().
 byte csButton;
 
-byte domainAtChannelStart;
-
 
 //==================================================================
 // Main code
@@ -130,8 +127,6 @@ inline void SetCapSenseChannel(void)
         | BITMASK(C2R)  // C2Vin+ connects to C2Vref instead of external C12IN+
         #endif
         | currentCapSenseChannel;
-
-    domainAtChannelStart = csDomain;
 }
 
 inline void RestartCapSenseTimer(void)
