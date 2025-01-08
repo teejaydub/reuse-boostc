@@ -91,6 +91,7 @@ void ClearBBOutput(void);
 // Note that this takes over as the selected slave, so that you can see the output;
 // it'll cause havoc if called in a multi-slave environment.
 void putsBB(const char* s);
+void putcBB(char c);
 
 #endif
 // __BASICBUS_H
