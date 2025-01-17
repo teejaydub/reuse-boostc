@@ -159,10 +159,10 @@ void InitCapSense(void)
             // Use the FVR for both high and low refs.  This gives us some immunity from line noise?
             // It also omits the external voltage reference, saving a few (cheap) parts.
             vrefcon0 = BITMASK(FVREN)  // Turn the FVR on
-                | BITMASK(FVRS1) | BITMASK(FVRS0);  // set to 4.096 V
+                | BITMASK(FVRS1);  // set to 2.048 V
             vrefcon1 = BITMASK(DACEN)  // Turn DAC on
                 | BITMASK(DACPSS1);  // ratiometric from Vss to FVRBUF1.
-            vrefcon2 = 16;  // 16/32 of Vdd = 2.048 V of swing, from 2.048 V (from the DAC) to 4.096 V (from the FVR).
+            vrefcon2 = 1;  // 1/32 of Vdd = 1.984 V of swing, from 0.064 V (from the DAC) to 2.048 V (from the FVR).
             cm2con1 = BITMASK(C1RSEL)  // Use the FVR as C1Vref
                 // use DAC for C2Vref
                 | BITMASK(C1HYS) | BITMASK(C2HYS);  // use hysteresis on both
