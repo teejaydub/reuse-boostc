@@ -162,7 +162,7 @@ void InitCapSense(void)
                 | BITMASK(FVRS1);  // set to 2.048 V
             vrefcon1 = BITMASK(DACEN)  // Turn DAC on
                 | BITMASK(DACPSS1);  // ratiometric from Vss to FVRBUF1.
-            vrefcon2 = 1;  // 1/32 of Vdd = 1.984 V of swing, from 0.064 V (from the DAC) to 2.048 V (from the FVR).
+            vrefcon2 = 8;  // 8/32 of Vdd = 1.536 V of swing, from 0.512 V (from the DAC) to 2.048 V (from the FVR).
             cm2con1 = BITMASK(C1RSEL)  // Use the FVR as C1Vref
                 // use DAC for C2Vref
                 | BITMASK(C1HYS) | BITMASK(C2HYS);  // use hysteresis on both
