@@ -1,4 +1,6 @@
 /* CapSense.h
+    Copyright (c) 2010, 2025 by Timothy J. Weber, tw@timothyweber.org.
+    
 	Using capacitive touch sensing to simulate up to 4 pushbuttons.
 	Follows the guidelines set out in Microchip's AN1101 and AN1103.
     Uses the Charge Time Measurement approach.
@@ -50,7 +52,6 @@ CAPSENSE_EXTERN CapSenseReading csBinMax[MAX_CAPSENSE_CHANNELS][NUM_CAPSENSE_BIN
 CAPSENSE_EXTERN byte csCurrentBin;
 
 // Set this to reflect anything that might change the capacitance of the system or individual pads.
-// E.g., to the heater state in CoolBot.
 // Currently only zero and nonzero values are distinguished here.
 CAPSENSE_EXTERN byte csDomain;
 

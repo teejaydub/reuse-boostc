@@ -1,24 +1,11 @@
 /* LCDUI.h
-    Copyright (c) 2007 by Timothy J. Weber, tw@timothyweber.org.
+    Copyright (c) 2007, 2017 by Timothy J. Weber, tw@timothyweber.org.
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    User interface system for a small alphanumeric LCD panel.
+    Designed for a 2x16 panel, but should scale.
+    Requires the lcd module, which also requires lcd_consts.h,
+    and LCDUIConsts.h.
 */
-
-// User interface system for a small alphanumeric LCD panel.
-// Designed for a 2x16 panel, but should scale.
-// Requires the lcd module, which also requires lcd_consts.h,
-// and LCDUIConsts.h.
 
 #ifndef _LCDUI_H
 #define _LCDUI_H

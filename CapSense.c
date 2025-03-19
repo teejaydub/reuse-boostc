@@ -1,4 +1,6 @@
 /* CapSense.c
+    Copyright (c) 2010, 2025 by Timothy J. Weber, tw@timothyweber.org.
+
 	Using capacitive touch sensing to simulate up to 4 pushbuttons.
 	Follows the guidelines set out in Microchip's AN1101 and AN1103.
 
@@ -37,9 +39,9 @@
     If thresholds are smaller than the overall noise level in the system, false-positive
     button presses can occur - buttons being pressed when the user doesn't intend to.
 
-    Given that CoolBot 8.0 seems to have phantom triggers when the heater is turned on,
-    define a "domain" value that the caller can set to reflects any input variable that may change the
-    capacitance of the system or the button pads.
+    For situations where periodic noise changes the environment, define
+    a "domain" value that the caller can set to reflects any input variable
+    that may change the capacitance of the system or the button pads.
 */
 
 #define IN_CAPSENSE

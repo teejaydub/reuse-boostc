@@ -1,4 +1,5 @@
 /* byteBuffer.h
+    Copyright (c) 2017 by Timothy J. Weber, tw@timothyweber.org.
 
 	A fast buffer that can have bytes written to it at the end and read from the beginning.
 	When empty, it's reset to the beginning.
