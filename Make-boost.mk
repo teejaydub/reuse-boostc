@@ -22,7 +22,7 @@ LN = $(WINE) "${BOOSTCBIN}/boostlink_picmicro.exe"
 .SUFFIXES: .c .o .h
 
 %.o : %.c
-	${CC} ${CFLAGS} $< -o $@
+	${CC} ${CFLAGS} $< -o $@ >/dev/null
 
 %.hex : %.o
 	${LN} ${LDFLAGS} -p $(@F) $(^F) ${LDLIBS}
